@@ -1,0 +1,90 @@
+# Environment files
+.env
+.env.*
+*.env
+
+# Dart/Flutter
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+**/.pub-cache/
+**/.pub/
+**/pubspec.lock
+
+# Android
+**/.gradle/
+**/android/.gradle/
+**/android/app/build/
+**/android/build/
+**/android/local.properties
+**/android/captures/
+**/GeneratedPluginRegistrant.java
+**/GeneratedPluginRegistrant.kt
+**/key.properties
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/*.xcworkspace/
+
+# Windows build
+**/windows/flutter/ephemeral/
+**/windows/build/
+
+# Fichiers executables et archives compiles
+*.exe
+*.dll
+*.pdb
+*.zip
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Medias, Images et Documents (totalement exclus pour garder un depot purement code source < 1.5 Mo)
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.bmp
+*.ico
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.mkv
+*.docx
+*.doc
+*.pdf
+*.pptx
+*.xlsx
+
+# IDE & Systeme
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+Thumbs.db
+*.log
+
+# Credentials secrets
+**/google_drive_client_1.json
+**/google_drive_client_2.json
+**/service_account_template.json
+**/service_account.json
+**/*.p8
+**/*.p12
+**/*.jks
+**/*.keystore
+
+# Fichiers temporaires
+git_log.txt
+obtenir_sha1.bat
+pousser_vers_github.ps1

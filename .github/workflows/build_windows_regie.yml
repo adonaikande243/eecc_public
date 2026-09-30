@@ -1,0 +1,49 @@
+name: Compilation Windows (Régie Studio)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Déclenchement manuel en 1 clic
+
+jobs:
+  build-windows:
+    name: Compiler EECC Régie Studio pour Windows (.exe)
+    runs-on: windows-latest
+
+    steps:
+      - name: Récupérer le code source
+        uses: actions/checkout@v4
+
+      - name: Installer Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Activer le support Windows Desktop dans Flutter
+        run: flutter config --enable-windows-desktop
+
+      - name: Dépendances eecc_cloud_storage
+        run: |
+          cd eecc_cloud_storage
+          flutter pub get
+
+      - name: Dépendances & Compilation Régie Studio
+        run: |
+          cd eecc_regie_studio
+          flutter pub get
+          flutter build windows --release
+
+      - name: Compresser le dossier exécutable de la Régie en ZIP
+        run: |
+          Compress-Archive -Path "eecc_regie_studio\build\windows\x64\runner\Release\*" -DestinationPath "EECC_Regie_Studio_Windows.zip"
+
+      - name: Publier le logiciel Régie Studio (.zip) comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Regie_Studio_Windows_Release
+          path: EECC_Regie_Studio_Windows.zip
+          retention-days: 30

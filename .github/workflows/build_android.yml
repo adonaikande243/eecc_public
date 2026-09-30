@@ -1,0 +1,78 @@
+name: Compilation Android (APKs EECC)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Permet de lancer la compilation manuellement en 1 clic sur GitHub
+
+jobs:
+  build-apk:
+    name: Compiler les APKs Android
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le code source
+        uses: actions/checkout@v4
+
+      - name: Configurer Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Installer Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Vérifier l'installation de Flutter
+        run: flutter doctor -v
+
+      # -------------------------------------------------------------
+      # 1. Compilation EECC Public (Fidèles)
+      # -------------------------------------------------------------
+      - name: Dépendances eecc_cloud_storage
+        run: |
+          cd eecc_cloud_storage
+          flutter pub get
+
+      - name: Dépendances & Compilation Eecc public
+        run: |
+          cd "Eecc public"
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Renommer APK Public
+        run: |
+          cp "Eecc public/build/app/outputs/flutter-apk/app-release.apk" "EECC_Public_Release.apk"
+
+      - name: Publier APK Public comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Public_Android_APK
+          path: EECC_Public_Release.apk
+          retention-days: 30
+
+      # -------------------------------------------------------------
+      # 2. Compilation EECC Pasteur
+      # -------------------------------------------------------------
+      - name: Dépendances & Compilation Eecc pasteur
+        run: |
+          cd "Eecc pasteur"
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Renommer APK Pasteur
+        run: |
+          cp "Eecc pasteur/build/app/outputs/flutter-apk/app-release.apk" "EECC_Pasteur_Release.apk"
+
+      - name: Publier APK Pasteur comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Pasteur_Android_APK
+          path: EECC_Pasteur_Release.apk
+          retention-days: 30

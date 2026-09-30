@@ -1,0 +1,39 @@
+name: eecc_comite
+description: Application Comité EECC.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  eecc_cloud_storage:
+    path: ../eecc_cloud_storage
+
+  # WebRTC — streaming caméra du téléphone vers la régie
+  flutter_webrtc: ^0.12.1
+  # Scanner QR Code du logiciel de régie
+  mobile_scanner: ^5.2.3
+  # Garder l'écran allumé pendant la diffusion caméra
+  wakelock_plus: ^1.2.8
+  # Réseau — IP locale
+  network_info_plus: ^6.0.1
+  # WebSocket pour le signaling WebRTC
+  web_socket_channel: ^3.0.1
+  # Permissions caméra/micro
+  permission_handler: ^11.3.1
+  # UI
+  provider: ^6.1.2
+  qr_flutter: ^4.1.0
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
