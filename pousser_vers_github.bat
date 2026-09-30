@@ -8,7 +8,7 @@ echo ===========================================================================
 
 echo [1/3] Indexation des correctifs de compilation...
 git add -A >> git_log.txt 2>&1
-git commit -m "Correctif compilation GitHub Actions : auto-generation plateformes Android et Windows" >> git_log.txt 2>&1
+git commit -m "Correctifs compilation : project-name explicites et configuration MSVC 2022" >> git_log.txt 2>&1
 
 echo [2/3] Verification de la branche et du remote...
 git branch -M main >> git_log.txt 2>&1

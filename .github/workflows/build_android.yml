@@ -46,7 +46,7 @@ jobs:
       - name: Initialiser projet Android et Compiler Eecc public
         run: |
           cd "Eecc public"
-          flutter create --platforms=android --org org.eecc .
+          flutter create --platforms=android --org org.eecc --project-name eecc_public .
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
@@ -67,7 +67,7 @@ jobs:
       - name: Initialiser projet Android et Compiler Eecc pasteur
         run: |
           cd "Eecc pasteur"
-          flutter create --platforms=android --org org.eecc .
+          flutter create --platforms=android --org org.eecc --project-name eecc_pasteur .
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 

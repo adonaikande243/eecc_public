@@ -10,11 +10,14 @@ on:
 jobs:
   build-windows:
     name: Compiler EECC Régie Studio pour Windows (.exe)
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Récupérer le code source
         uses: actions/checkout@v4
+
+      - name: Configurer l'environnement Visual Studio C++ (MSVC)
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Installer Flutter SDK
         uses: subosito/flutter-action@v2
@@ -34,7 +37,7 @@ jobs:
       - name: Initialiser le projet Windows et Compiler la Régie Studio
         run: |
           cd eecc_regie_studio
-          flutter create --platforms=windows --org org.eecc .
+          flutter create --platforms=windows --org org.eecc --project-name eecc_regie_studio .
           flutter pub get
           flutter build windows --release
 
