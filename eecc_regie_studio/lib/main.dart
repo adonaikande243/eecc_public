@@ -8,6 +8,7 @@ import 'core/services/webrtc_camera_service.dart';
 import 'core/services/scene_manager.dart';
 import 'core/services/ffmpeg_streaming_service.dart';
 import 'core/services/destination_manager_service.dart';
+import 'core/services/regie_orchestrator_service.dart';
 import 'screens/main_studio_screen.dart';
 
 void main() async {

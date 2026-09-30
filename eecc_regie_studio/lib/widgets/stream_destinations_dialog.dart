@@ -121,7 +121,7 @@ class _StreamDestinationsDialogState extends State<StreamDestinationsDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 720,
-        maxHeight: 780,
+        constraints: const BoxConstraints(maxHeight: 780),
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,

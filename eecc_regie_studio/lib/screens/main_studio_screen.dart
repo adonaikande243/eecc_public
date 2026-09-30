@@ -7,6 +7,7 @@ import '../widgets/sources_panel.dart';
 import '../widgets/audio_mixer_panel.dart';
 import '../core/services/ffmpeg_streaming_service.dart';
 import '../widgets/stream_destinations_dialog.dart';
+import '../widgets/status_bar.dart';
 import 'camera_manager_screen.dart';
 
 class MainStudioScreen extends StatelessWidget {

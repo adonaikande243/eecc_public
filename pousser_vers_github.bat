@@ -6,9 +6,9 @@ echo SYNCHRONISATION EECC VERS GITHUB >> git_log.txt
 echo Date: %date% %time% >> git_log.txt
 echo ============================================================================ >> git_log.txt
 
-echo [1/3] Indexation des correctifs de compilation...
+echo [1/3] Indexation des correctifs Dart pour Windows et Android...
 git add -A >> git_log.txt 2>&1
-git commit -m "Correctifs compilation : project-name explicites et configuration MSVC 2022" >> git_log.txt 2>&1
+git commit -m "Correctifs compilation Dart : imports RegieOrchestratorService, StatusBar et Container constraints" >> git_log.txt 2>&1
 
 echo [2/3] Verification de la branche et du remote...
 git branch -M main >> git_log.txt 2>&1
