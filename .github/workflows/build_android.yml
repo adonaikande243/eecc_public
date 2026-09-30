@@ -33,16 +33,20 @@ jobs:
         run: flutter doctor -v
 
       # -------------------------------------------------------------
-      # 1. Compilation EECC Public (Fidèles)
+      # Préparation du module partagé
       # -------------------------------------------------------------
       - name: Dépendances eecc_cloud_storage
         run: |
           cd eecc_cloud_storage
           flutter pub get
 
-      - name: Dépendances & Compilation Eecc public
+      # -------------------------------------------------------------
+      # 1. Compilation EECC Public (Fidèles)
+      # -------------------------------------------------------------
+      - name: Initialiser projet Android et Compiler Eecc public
         run: |
           cd "Eecc public"
+          flutter create --platforms=android --org org.eecc .
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
@@ -60,9 +64,10 @@ jobs:
       # -------------------------------------------------------------
       # 2. Compilation EECC Pasteur
       # -------------------------------------------------------------
-      - name: Dépendances & Compilation Eecc pasteur
+      - name: Initialiser projet Android et Compiler Eecc pasteur
         run: |
           cd "Eecc pasteur"
+          flutter create --platforms=android --org org.eecc .
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 

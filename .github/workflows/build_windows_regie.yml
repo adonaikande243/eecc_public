@@ -31,9 +31,10 @@ jobs:
           cd eecc_cloud_storage
           flutter pub get
 
-      - name: Dépendances & Compilation Régie Studio
+      - name: Initialiser le projet Windows et Compiler la Régie Studio
         run: |
           cd eecc_regie_studio
+          flutter create --platforms=windows --org org.eecc .
           flutter pub get
           flutter build windows --release
 
