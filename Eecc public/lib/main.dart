@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'theme/eecc_theme.dart';
-import 'screens/login_screen.dart';
+import 'screens/home/main_navigation_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const EeccPublicApp());
 }
 
@@ -12,7 +13,7 @@ class EeccPublicApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EECC Public',
+      title: 'EECC Mobile',
       theme: EeccTheme.themeData,
       home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
@@ -20,6 +21,9 @@ class EeccPublicApp extends StatelessWidget {
   }
 }
 
+/// Écran Splash fidèle à la maquette 01_splash.png :
+/// Fond blanc pur, emblème circulaire bleu nuit avec colombe,
+/// Typographie nette, indicateur circulaire fin et texte "Vérification de la session...".
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -31,11 +35,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
+    Future.delayed(const Duration(milliseconds: 1800), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
       }
     });
@@ -44,28 +48,76 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EeccTheme.violet,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.church, size: 70, color: EeccTheme.dore),
-            const SizedBox(height: 16),
-            Text(
-              'EECC Mobile',
-              style: TextStyle(
-                color: EeccTheme.dore,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+      backgroundColor: EeccTheme.bgWhite,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Spacer(flex: 3),
+              // Emblème Circulaire officiel
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: EeccTheme.navy, width: 2.5),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.church_outlined,
+                    size: 52,
+                    color: EeccTheme.navy,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Plateforme Numérique de l\'Église',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-          ],
+              const SizedBox(height: 24),
+              // Titre officiel
+              const Text(
+                'EECC',
+                style: TextStyle(
+                  color: EeccTheme.navy,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.0,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Sous-titre officiel
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32.0),
+                child: Text(
+                  'Église Évangélique les Cohéritiers du Christ',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: EeccTheme.textMuted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const Spacer(flex: 3),
+              // Indicateur circulaire fin
+              const SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(EeccTheme.navy),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Vérification de la session...',
+                style: TextStyle(
+                  color: EeccTheme.textLight,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const Spacer(flex: 1),
+            ],
+          ),
         ),
       ),
     );
