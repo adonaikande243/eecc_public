@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'theme/eecc_theme.dart';
+import 'screens/comite_dashboard_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const EeccComiteApp());
 }
 
@@ -13,9 +15,8 @@ class EeccComiteApp extends StatelessWidget {
     return MaterialApp(
       title: 'EECC Comité',
       theme: EeccTheme.themeData,
-      home: const Scaffold(
-        body: Center(child: Text('Comité Dashboard')),
-      ),
+      home: const ComiteDashboardScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

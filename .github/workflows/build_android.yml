@@ -82,3 +82,45 @@ jobs:
           name: EECC_Pasteur_Android_APK
           path: EECC_Pasteur_Release.apk
           retention-days: 30
+
+      # -------------------------------------------------------------
+      # 3. Compilation EECC Admin
+      # -------------------------------------------------------------
+      - name: Initialiser projet Android et Compiler Eecc admin
+        run: |
+          cd "Eecc admin"
+          flutter create --platforms=android --org org.eecc --project-name eecc_admin .
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Renommer APK Admin
+        run: |
+          cp "Eecc admin/build/app/outputs/flutter-apk/app-release.apk" "EECC_Admin_Release.apk"
+
+      - name: Publier APK Admin comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Admin_Android_APK
+          path: EECC_Admin_Release.apk
+          retention-days: 30
+
+      # -------------------------------------------------------------
+      # 4. Compilation EECC Comité
+      # -------------------------------------------------------------
+      - name: Initialiser projet Android et Compiler Eecc comite
+        run: |
+          cd "Eecc comité"
+          flutter create --platforms=android --org org.eecc --project-name eecc_comite .
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+
+      - name: Renommer APK Comite
+        run: |
+          cp "Eecc comité/build/app/outputs/flutter-apk/app-release.apk" "EECC_Comite_Release.apk"
+
+      - name: Publier APK Comite comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Comite_Android_APK
+          path: EECC_Comite_Release.apk
+          retention-days: 30

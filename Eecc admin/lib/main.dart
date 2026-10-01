@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'theme/eecc_theme.dart';
+import 'screens/admin_dashboard_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const EeccAdminApp());
 }
 
@@ -13,9 +15,8 @@ class EeccAdminApp extends StatelessWidget {
     return MaterialApp(
       title: 'EECC Admin',
       theme: EeccTheme.themeData,
-      home: const Scaffold(
-        body: Center(child: Text('Admin Dashboard')),
-      ),
+      home: const AdminDashboardScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
