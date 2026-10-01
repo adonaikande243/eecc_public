@@ -29,6 +29,13 @@ jobs:
       - name: Activer le support Windows Desktop dans Flutter
         run: flutter config --enable-windows-desktop
 
+      - name: Préparer les répertoires d'assets
+        run: |
+          New-Item -ItemType Directory -Force -Path "eecc_regie_studio\assets\overlays"
+          New-Item -ItemType Directory -Force -Path "eecc_regie_studio\assets\sounds"
+          New-Item -ItemType Directory -Force -Path "eecc_regie_studio\assets\logos"
+          New-Item -ItemType Directory -Force -Path "eecc_cloud_storage\assets\credentials"
+
       - name: Dépendances eecc_cloud_storage
         run: |
           cd eecc_cloud_storage

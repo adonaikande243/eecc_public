@@ -37,6 +37,7 @@ jobs:
       # -------------------------------------------------------------
       - name: Dépendances eecc_cloud_storage
         run: |
+          mkdir -p eecc_cloud_storage/assets/credentials
           cd eecc_cloud_storage
           flutter pub get
 
