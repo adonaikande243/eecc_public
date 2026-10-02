@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:eecc_cloud_storage/eecc_cloud_storage.dart';
 import '../../theme/eecc_theme.dart';
 
-/// Parcours d'offrande fidèle aux maquettes 32_offrande_type.png et 33_offrande_montant.png
+/// Parcours d'offrande pixel-perfect conforme aux maquettes 32_offrande_type.png et 33_offrande_montant.png
 class OfferingFlowScreen extends StatefulWidget {
   const OfferingFlowScreen({Key? key}) : super(key: key);
 
@@ -13,77 +13,81 @@ class OfferingFlowScreen extends StatefulWidget {
 class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
   int _currentStep = 0; // 0 = Choix du type (32), 1 = Montant et paiement (33)
 
-  String _selectedType = 'Dîme';
-  String _currency = 'FC';
+  // Étape 1 : Types exacts de la maquette 32_offrande_type.png
+  String _selectedType = 'Offrande';
+
+  // Étape 2 : Montant et moyens de paiement (33_offrande_montant.png)
+  String _montant = '25 000';
+  String _devise = 'FC';
+  String _selectedPaymentMethod = 'airtel'; // 'airtel', 'orange', 'carte'
+
   final TextEditingController _amountController = TextEditingController(text: '25000');
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _telephoneController = TextEditingController();
   final TextEditingController _nomController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
 
-  PaymentGatewayType _gateway = PaymentGatewayType.airtelMoney;
   bool _isProcessing = false;
-
   final MaishapayService _maishapayService = MaishapayService();
 
   @override
   void dispose() {
     _amountController.dispose();
-    _phoneController.dispose();
+    _telephoneController.dispose();
     _nomController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
-  ModePaiementMaishapay _getMode(PaymentGatewayType type) {
-    switch (type) {
-      case PaymentGatewayType.mpesa:
-        return ModePaiementMaishapay.mpesa;
-      case PaymentGatewayType.airtelMoney:
-        return ModePaiementMaishapay.airtelMoney;
-      case PaymentGatewayType.orangeMoney:
-        return ModePaiementMaishapay.orangeMoney;
-      case PaymentGatewayType.visa:
-        return ModePaiementMaishapay.visa;
-      case PaymentGatewayType.mastercard:
-        return ModePaiementMaishapay.mastercard;
-    }
+  void _onTypeSelected(String type) {
+    setState(() {
+      _selectedType = type;
+    });
   }
 
-  Future<void> _processPayment() async {
-    final amount = double.tryParse(_amountController.text.trim());
-    if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez spécifier un montant valide.')),
-      );
-      return;
-    }
+  void _goToStepAmount() {
+    setState(() {
+      _currentStep = 1;
+    });
+  }
+
+  void _processPayment() async {
+    final cleanMontant = _amountController.text.replaceAll(' ', '').trim();
+    final montantDouble = double.tryParse(cleanMontant) ?? 25000.0;
 
     setState(() => _isProcessing = true);
 
-    final info = PaymentGatewayInfo.passerelles[_gateway]!;
-    final deviseApi = _currency == 'FC' ? 'CDF' : 'USD';
+    ModePaiementMaishapay mode;
+    String passerelleNom;
+    if (_selectedPaymentMethod == 'airtel') {
+      mode = ModePaiementMaishapay.airtelMoney;
+      passerelleNom = 'Airtel Money';
+    } else if (_selectedPaymentMethod == 'orange') {
+      mode = ModePaiementMaishapay.orangeMoney;
+      passerelleNom = 'Orange Money';
+    } else {
+      mode = ModePaiementMaishapay.visa;
+      passerelleNom = 'Carte bancaire';
+    }
 
+    final deviseCode = _devise == 'FC' ? 'CDF' : 'USD';
     final res = await _maishapayService.traiterOffrande(
-      montant: amount,
-      devise: deviseApi,
+      montant: montantDouble,
+      devise: deviseCode,
       typeOffrande: _selectedType,
       nomFidele: _nomController.text.trim().isEmpty ? 'Fidèle EECC' : _nomController.text.trim(),
-      telephone: _phoneController.text.trim(),
-      email: _emailController.text.trim(),
-      mode: _getMode(_gateway),
+      telephone: _telephoneController.text.trim(),
+      mode: mode,
     );
 
     setState(() => _isProcessing = false);
 
     if (res.succes) {
       if (mounted) {
-        _showSuccessDialog(res.reference, amount, deviseApi, info.nom);
+        _showSuccessDialog(res.reference, montantDouble, deviseCode, passerelleNom);
       }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.red.shade700,
+            backgroundColor: const Color(0xFFDC2626),
             content: Text('Échec de la transaction : ${res.message}'),
           ),
         );
@@ -99,9 +103,9 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: const [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 8),
-            Text('Offrande Confirmée', style: TextStyle(fontWeight: FontWeight.bold)),
+            Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 28),
+            SizedBox(width: 10),
+            Text('Offrande Confirmée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         content: Column(
@@ -110,26 +114,32 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
           children: [
             const Text(
               'Que l\'Éternel se souvienne de toutes vos offrandes.',
-              style: TextStyle(fontStyle: FontStyle.italic, color: EeccTheme.textMuted),
+              style: TextStyle(fontStyle: FontStyle.italic, color: Color(0xFF64748B)),
             ),
-            const Divider(height: 20),
-            Text('Type : $_selectedType', style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text('Montant : $amt $dev', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: EeccTheme.navy)),
-            const SizedBox(height: 4),
-            Text('Mode : $gatewayName'),
-            const SizedBox(height: 4),
-            Text('Réf : $ref', style: const TextStyle(fontSize: 12, color: EeccTheme.textLight)),
+            const Divider(height: 24),
+            Text('Type : $_selectedType', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            const SizedBox(height: 6),
+            Text(
+              'Montant : ${amt.toStringAsFixed(0)} $dev',
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1E3A5F)),
+            ),
+            const SizedBox(height: 6),
+            Text('Mode : $gatewayName', style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 6),
+            Text('Référence : $ref', style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
           ],
         ),
         actions: [
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: EeccTheme.navy),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E3A5F),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Fermer et retour'),
+            child: const Text('Fermer et retour', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -139,14 +149,12 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EeccTheme.bgWhite,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(
-          _currentStep == 0 ? 'Don & Offrande' : 'Montant & Paiement',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
           onPressed: () {
             if (_currentStep == 1) {
               setState(() => _currentStep = 0);
@@ -155,107 +163,135 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
             }
           },
         ),
+        title: Text(
+          _currentStep == 0 ? 'Offrandes' : 'Offrande',
+          style: const TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: false,
       ),
-      body: _currentStep == 0 ? _buildStepType() : _buildStepAmount(),
+      body: _currentStep == 0 ? _buildStep1Type() : _buildStep2Amount(),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: SizedBox(
+            height: 52,
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A5F),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: _currentStep == 0
+                  ? _goToStepAmount
+                  : (_isProcessing ? null : _processPayment),
+              child: _isProcessing
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    )
+                  : const Text(
+                      'Continuer',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  // Étape 1 : Choix du type (Maquette 32_offrande_type.png)
-  Widget _buildStepType() {
+  // ===========================================================================
+  // ÉTAPE 1 : Choix du type de contribution (Maquette 32_offrande_type.png)
+  // ===========================================================================
+  Widget _buildStep1Type() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Faire un don',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: EeccTheme.navyDark),
+            'Choisissez le type de contribution',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w400,
+            ),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Choisissez le type d\'offrande que vous souhaitez apporter :',
-            style: TextStyle(fontSize: 13, color: EeccTheme.textMuted),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // Grille 2x2 des types
+          // Grille 2x2 des 4 types
           GridView.count(
             crossAxisCount: 2,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
             shrinkWrap: true,
+            childAspectRatio: 1.15,
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _buildTypeCard(
-                title: 'Offrande ordinaire',
-                desc: 'Participation libre',
-                icon: Icons.payments_outlined,
+                title: 'Offrande',
+                subtitle: 'Contribution régulière',
+                icon: Icons.credit_card_outlined,
               ),
               _buildTypeCard(
-                title: 'Dîme',
-                desc: 'Le dixième saint',
-                icon: Icons.account_balance_outlined,
+                title: 'Don',
+                subtitle: 'Soutien libre à un projet',
+                icon: Icons.volunteer_activism_outlined,
               ),
               _buildTypeCard(
-                title: 'Don spécial / Projet',
-                desc: 'Construction & Soutien',
-                icon: Icons.favorite_outline,
+                title: 'Contribution',
+                subtitle: 'Projet ou collecte spécifique',
+                icon: Icons.groups_outlined,
               ),
               _buildTypeCard(
-                title: 'Action de grâce',
-                desc: 'Témoignage béni',
-                icon: Icons.star_outline,
+                title: 'Autre',
+                subtitle: 'Préciser le motif',
+                icon: Icons.description_outlined,
               ),
             ],
-          ),
-          const SizedBox(height: 32),
-
-          // Bouton Continuer
-          ElevatedButton(
-            onPressed: () => setState(() => _currentStep = 1),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: EeccTheme.navy,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Continuer', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTypeCard({required String title, required String desc, required IconData icon}) {
-    final isSelected = _selectedType == title;
+  Widget _buildTypeCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    final bool isSelected = _selectedType == title;
 
     return InkWell(
-      onTap: () => setState(() => _selectedType = title),
+      onTap: () => _onTypeSelected(title),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEFF6FF) : EeccTheme.bgWhite,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? EeccTheme.navy : EeccTheme.borderGrey,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFFE2E8F0),
+            width: isSelected ? 2.0 : 1.0,
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected ? EeccTheme.navy : const Color(0xFFF1F5F9),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isSelected ? Colors.white : EeccTheme.navyDark,
-                size: 22,
-              ),
+            Icon(
+              icon,
+              size: 28,
+              color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFF64748B),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,15 +299,21 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 13.5,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? EeccTheme.navy : EeccTheme.navyDark,
+                    color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFF1E293B),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
-                  desc,
-                  style: const TextStyle(fontSize: 11, color: EeccTheme.textMuted),
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -281,60 +323,29 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
     );
   }
 
-  // Étape 2 : Montant et Paiement (Maquette 33_offrande_montant.png)
-  Widget _buildStepAmount() {
+  // ===========================================================================
+  // ÉTAPE 2 : Montant et Moyen de paiement (Maquette 33_offrande_montant.png)
+  // ===========================================================================
+  Widget _buildStep2Amount() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Badge du type choisi
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFBFDBFE)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check, size: 14, color: EeccTheme.navy),
-                    const SizedBox(width: 4),
-                    Text(
-                      _selectedType,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: EeccTheme.navy),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              // Sélecteur Devise (FC / USD)
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'FC', label: Text('FC', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
-                  ButtonSegment(value: 'USD', label: Text('USD', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold))),
-                ],
-                selected: {_currency},
-                onSelectionChanged: (val) => setState(() => _currency = val.first),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Grand affichage du montant
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            decoration: BoxDecoration(
-              color: EeccTheme.bgGrey,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: EeccTheme.borderGrey),
-            ),
+          // Section Montant
+          Center(
             child: Column(
               children: [
-                const Text('Montant à offrir', style: TextStyle(fontSize: 12, color: EeccTheme.textMuted)),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                const Text(
+                  'Montant',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -345,169 +356,190 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
                         controller: _amountController,
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, color: EeccTheme.navyDark),
-                        decoration: const InputDecoration(border: InputBorder.none),
+                        style: const TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.5,
+                        ),
+                        decoration: const InputDecoration(
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            _montant = val;
+                          });
+                        },
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _currency,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: EeccTheme.navy),
+                      _devise,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
 
-          // Puces de montants rapides
+          const SizedBox(height: 28),
+
+          // Puces de sélection rapide de montant
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildQuickChip('5000'),
-                _buildQuickChip('10000'),
-                _buildQuickChip('25000'),
-                _buildQuickChip('50000'),
-                _buildQuickChip('100000'),
+                _buildAmountChip('5 000', '5000'),
+                _buildAmountChip('10 000', '10000'),
+                _buildAmountChip('25 000', '25000'),
+                _buildAmountChip('50 000', '50000'),
+                _buildAmountChip('100 000', '100000'),
               ],
             ),
           ),
-          const SizedBox(height: 24),
 
-          // Sélecteur de méthode de paiement (Radio list fidèle)
+          const SizedBox(height: 36),
+
+          // Moyen de paiement
           const Text(
-            'Mode de paiement',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: EeccTheme.navyDark),
+            'Moyen de paiement',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // 3 Radios avec bordures fidèles à 33_offrande_montant.png
+          _buildPaymentRadioOption(
+            id: 'airtel',
+            title: 'Mobile Money (Airtel)',
+            icon: Icons.phone_android,
           ),
           const SizedBox(height: 10),
-
-          _buildPaymentRadioTile(
-            title: 'Airtel Money',
-            type: PaymentGatewayType.airtelMoney,
+          _buildPaymentRadioOption(
+            id: 'orange',
+            title: 'Mobile Money (Orange)',
             icon: Icons.phone_android,
-            badgeColor: Colors.red.shade100,
-            badgeTextColor: Colors.red.shade800,
           ),
-          _buildPaymentRadioTile(
-            title: 'Orange Money',
-            type: PaymentGatewayType.orangeMoney,
-            icon: Icons.phone_android,
-            badgeColor: Colors.orange.shade100,
-            badgeTextColor: Colors.orange.shade900,
-          ),
-          _buildPaymentRadioTile(
-            title: 'M-Pesa (Vodacom)',
-            type: PaymentGatewayType.mpesa,
-            icon: Icons.phone_android,
-            badgeColor: Colors.green.shade100,
-            badgeTextColor: Colors.green.shade900,
-          ),
-          _buildPaymentRadioTile(
-            title: 'Carte bancaire (Visa / Mastercard)',
-            type: PaymentGatewayType.visa,
+          const SizedBox(height: 10),
+          _buildPaymentRadioOption(
+            id: 'carte',
+            title: 'Carte bancaire',
             icon: Icons.credit_card,
-            badgeColor: Colors.blue.shade100,
-            badgeTextColor: Colors.blue.shade900,
           ),
 
-          const SizedBox(height: 16),
-          // Coordonnées
-          TextField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              labelText: 'Numéro Mobile Money (+243...)',
-              prefixIcon: const Icon(Icons.phone),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              filled: true,
-              fillColor: EeccTheme.bgGrey,
-            ),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _nomController,
-            decoration: InputDecoration(
-              labelText: 'Nom du fidèle (facultatif)',
-              prefixIcon: const Icon(Icons.person_outline),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              filled: true,
-              fillColor: EeccTheme.bgGrey,
-            ),
-          ),
+          const SizedBox(height: 20),
 
-          const SizedBox(height: 26),
-          // Bouton Confirmer le paiement
-          ElevatedButton(
-            onPressed: _isProcessing ? null : _processPayment,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: EeccTheme.navy,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          // Champ téléphone / coordonnées
+          if (_selectedPaymentMethod != 'carte')
+            TextField(
+              controller: _telephoneController,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                labelText: 'Numéro de téléphone (+243...)',
+                hintText: '820 000 000',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              ),
             ),
-            child: _isProcessing
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                : Text(
-                    'Confirmer le paiement (${_amountController.text} $_currency)',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _buildQuickChip(String val) {
+  Widget _buildAmountChip(String label, String value) {
+    final bool isSelected = _amountController.text.replaceAll(' ', '') == value;
+
     return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: ActionChip(
-        label: Text('$val $_currency', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-        backgroundColor: EeccTheme.bgGrey,
-        side: const BorderSide(color: EeccTheme.borderGrey),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onPressed: () => setState(() => _amountController.text = val),
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _amountController.text = value;
+            _montant = value;
+          });
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Text(
+            '$label $_devise',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFF475569),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildPaymentRadioTile({
+  Widget _buildPaymentRadioOption({
+    required String id,
     required String title,
-    required PaymentGatewayType type,
     required IconData icon,
-    required Color badgeColor,
-    required Color badgeTextColor,
   }) {
-    final isSelected = _gateway == type;
+    final bool isSelected = _selectedPaymentMethod == id;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFF8FAFC) : EeccTheme.bgWhite,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isSelected ? EeccTheme.navy : EeccTheme.borderGrey,
-          width: isSelected ? 1.5 : 1,
+    return InkWell(
+      onTap: () => setState(() => _selectedPaymentMethod = id),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.8 : 1.0,
+          ),
         ),
-      ),
-      child: RadioListTile<PaymentGatewayType>(
-        value: type,
-        groupValue: _gateway,
-        activeColor: EeccTheme.navy,
-        dense: true,
-        title: Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-        secondary: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: badgeColor, borderRadius: BorderRadius.circular(6)),
-          child: Icon(icon, size: 18, color: badgeTextColor),
+        child: Row(
+          children: [
+            // Radio circle
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFF94A3B8),
+                  width: isSelected ? 6.0 : 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+          ],
         ),
-        onChanged: (val) {
-          if (val != null) setState(() => _gateway = val);
-        },
       ),
     );
   }

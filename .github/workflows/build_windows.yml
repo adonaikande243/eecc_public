@@ -1,0 +1,56 @@
+name: Compilation Windows (Studio Regie EECC)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Compiler EECC Regie Studio Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Recuperer le code source
+        uses: actions/checkout@v4
+
+      - name: Installer Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Activer le support Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Creer les dossiers d'assets obligatoires
+        run: |
+          New-Item -ItemType Directory -Force -Path "eecc_cloud_storage\assets\credentials"
+          New-Item -ItemType Directory -Force -Path "eecc_regie_studio\assets\overlays"
+          New-Item -ItemType Directory -Force -Path "eecc_regie_studio\assets\sounds"
+          New-Item -ItemType Directory -Force -Path "eecc_regie_studio\assets\logos"
+
+      - name: Resoudre les dependances de eecc_cloud_storage
+        working-directory: eecc_cloud_storage
+        run: flutter pub get
+
+      - name: Generer et Compiler eecc_regie_studio
+        working-directory: eecc_regie_studio
+        run: |
+          flutter create --platforms=windows --project-name=eecc_regie_studio .
+          flutter pub get
+          flutter build windows --release
+
+      - name: Compresser les fichiers de sortie en ZIP
+        run: |
+          Compress-Archive -Path "eecc_regie_studio\build\windows\x64\runner\Release\*" -DestinationPath "EECC_Regie_Studio_Windows.zip" -Force
+
+      - name: Publier le package ZIP comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Regie_Studio_Windows_x64
+          path: EECC_Regie_Studio_Windows.zip
+          retention-days: 30

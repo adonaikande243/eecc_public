@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/eecc_theme.dart';
 
-/// Formulaire de demande de prière fidèle à la maquette 37_priere_formulaire.png
+/// Formulaire de demande de prière pixel-perfect conforme à la maquette 37_priere_formulaire.png
 class PriereScreen extends StatefulWidget {
   const PriereScreen({Key? key}) : super(key: key);
 
@@ -10,27 +10,33 @@ class PriereScreen extends StatefulWidget {
 }
 
 class _PriereScreenState extends State<PriereScreen> {
-  final _titreController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final TextEditingController _sujetController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
-  String _confidentialite = 'privee'; // 'privee' ou 'intercession'
-  bool _suiviPastoral = true;
+  // Confidentialité : 'privee' ou 'pastorale' (Maquette 37_priere_formulaire.png)
+  String _confidentialite = 'privee';
+
+  // Souhaitez-vous un suivi ?
+  bool _souhaiteSuivi = true;
   bool _envoiEnCours = false;
 
   @override
   void dispose() {
-    _titreController.dispose();
+    _sujetController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
 
   void _envoyerDemande() {
-    final titre = _titreController.text.trim();
+    final sujet = _sujetController.text.trim();
     final description = _descriptionController.text.trim();
 
-    if (titre.isEmpty || description.isEmpty) {
+    if (sujet.isEmpty || description.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez renseigner le sujet et la description.')),
+        const SnackBar(
+          content: Text('Veuillez renseigner le sujet et la description de votre prière.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
       );
       return;
     }
@@ -46,23 +52,28 @@ class _PriereScreenState extends State<PriereScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(
               children: const [
-                Icon(Icons.check_circle, color: Colors.green, size: 28),
-                SizedBox(width: 8),
-                Text('Demande transmise', style: TextStyle(fontWeight: FontWeight.bold)),
+                Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 28),
+                SizedBox(width: 10),
+                Text('Demande envoyée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
-            content: const Text(
-              'Votre requête a été confiée aux pasteurs et à l\'équipe d\'intercession avec toute la discrétion requise.',
-              style: TextStyle(fontSize: 13.5, color: EeccTheme.navyDark),
+            content: Text(
+              _confidentialite == 'privee'
+                  ? 'Votre requête a été enregistrée en toute confidentialité.'
+                  : 'Votre requête a été transmise à l\'équipe pastorale avec toute la discrétion requise.',
+              style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
             ),
             actions: [
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: EeccTheme.navy),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1E3A5F),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                   Navigator.pop(context);
                 },
-                child: const Text('Fermer'),
+                child: const Text('Fermer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -74,136 +85,233 @@ class _PriereScreenState extends State<PriereScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EeccTheme.bgWhite,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Nouvelle demande de prière', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1E293B)),
           onPressed: () => Navigator.pop(context),
         ),
+        title: const Text(
+          'Demande de prière',
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Demande de prière',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: EeccTheme.navyDark),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Confiez vos requêtes à l\'équipe pastorale dans la discrétion et la prière.',
-              style: TextStyle(fontSize: 13, color: EeccTheme.textMuted),
-            ),
-            const SizedBox(height: 24),
-
             // Champ Sujet
-            const Text('Titre ou sujet de prière', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: EeccTheme.navyDark)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _titreController,
-              decoration: InputDecoration(
-                hintText: 'Ex: Guérison d\'un proche, examen...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: EeccTheme.borderGrey)),
-                filled: true,
-                fillColor: EeccTheme.bgGrey,
+            const Text(
+              'Sujet',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _sujetController,
+              decoration: InputDecoration(
+                hintText: 'Guérison, famille, travail...',
+                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                filled: true,
+                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF1E3A5F), width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
-            // Champ Description détaillée
-            const Text('Description détaillée', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: EeccTheme.navyDark)),
+            // Champ Description
+            const Text(
+              'Description',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
               maxLines: 5,
               decoration: InputDecoration(
-                hintText: 'Partagez ce qui vous tient à cœur...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: EeccTheme.borderGrey)),
+                hintText: 'Partagez votre demande de prière en quelques mots...',
+                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                contentPadding: const EdgeInsets.all(14),
                 filled: true,
-                fillColor: EeccTheme.bgGrey,
+                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF1E3A5F), width: 1.5),
+                ),
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 24),
 
-            // Confidentialité
-            const Text('Confidentialité', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: EeccTheme.navyDark)),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: EeccTheme.borderGrey),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  RadioListTile<String>(
-                    value: 'privee',
-                    groupValue: _confidentialite,
-                    activeColor: EeccTheme.navy,
-                    dense: true,
-                    title: const Text('Privée (uniquement les pasteurs)', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500)),
-                    onChanged: (val) => setState(() => _confidentialite = val!),
-                  ),
-                  const Divider(height: 1),
-                  RadioListTile<String>(
-                    value: 'intercession',
-                    groupValue: _confidentialite,
-                    activeColor: EeccTheme.navy,
-                    dense: true,
-                    title: const Text('Équipe d\'intercession', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500)),
-                    onChanged: (val) => setState(() => _confidentialite = val!),
-                  ),
-                ],
+            // Section Confidentialité
+            const Text(
+              'Confidentialité',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
 
-            // Suivi pastoral Switch
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: EeccTheme.borderGrey),
-                borderRadius: BorderRadius.circular(10),
-                color: EeccTheme.bgGrey,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('Recevoir un suivi pastoral', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: EeccTheme.navyDark)),
-                        SizedBox(height: 2),
-                        Text('Un pasteur pourra vous contacter si nécessaire', style: TextStyle(fontSize: 11.5, color: EeccTheme.textMuted)),
-                      ],
-                    ),
+            // Option 1 : Privée
+            _buildConfidentialityRadio(
+              id: 'privee',
+              title: 'Privée',
+              subtitle: 'Visible uniquement par vous',
+            ),
+            const SizedBox(height: 10),
+
+            // Option 2 : À l'équipe pastorale
+            _buildConfidentialityRadio(
+              id: 'pastorale',
+              title: 'À l\'équipe pastorale',
+              subtitle: 'Un pasteur autorisé pourra la consulter',
+            ),
+            const SizedBox(height: 24),
+
+            // Souhaitez-vous un suivi ?
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Souhaitez-vous un suivi ?',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1E293B),
                   ),
-                  Switch(
-                    value: _suiviPastoral,
-                    activeColor: EeccTheme.navy,
-                    onChanged: (val) => setState(() => _suiviPastoral = val),
-                  ),
-                ],
-              ),
+                ),
+                Switch(
+                  value: _souhaiteSuivi,
+                  activeColor: const Color(0xFF1E3A5F),
+                  onChanged: (val) => setState(() => _souhaiteSuivi = val),
+                ),
+              ],
             ),
             const SizedBox(height: 30),
-
-            // Bouton Soumettre
-            ElevatedButton(
-              onPressed: _envoiEnCours ? null : _envoyerDemande,
+          ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: SizedBox(
+            height: 52,
+            width: double.infinity,
+            child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: EeccTheme.navy,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                backgroundColor: const Color(0xFF1E3A5F),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
+              onPressed: _envoiEnCours ? null : _envoyerDemande,
               child: _envoiEnCours
                   ? const SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text('Envoyer la demande', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  : const Text(
+                      'Envoyer',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfidentialityRadio({
+    required String id,
+    required String title,
+    required String subtitle,
+  }) {
+    final bool isSelected = _confidentialite == id;
+
+    return InkWell(
+      onTap: () => setState(() => _confidentialite = id),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.8 : 1.0,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF1E3A5F) : const Color(0xFF94A3B8),
+                    width: isSelected ? 6.0 : 1.5,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      color: const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

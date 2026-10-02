@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/eecc_theme.dart';
 import 'bible_reading_screen.dart';
 
-/// Écran d'accueil de la Bible fidèle à la maquette 24_bible_accueil.png
+/// Écran d'accueil de la Bible pixel-perfect conforme à la maquette 24_bible_accueil.png
 class BibleHomeScreen extends StatefulWidget {
   const BibleHomeScreen({Key? key}) : super(key: key);
 
@@ -10,143 +10,169 @@ class BibleHomeScreen extends StatefulWidget {
   State<BibleHomeScreen> createState() => _BibleHomeScreenState();
 }
 
-class _BibleHomeScreenState extends State<BibleHomeScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
-
-  final List<Map<String, dynamic>> _ancienTestament = [
-    {'nom': 'Genèse', 'chapitres': 50},
-    {'nom': 'Exode', 'chapitres': 40},
-    {'nom': 'Lévitique', 'chapitres': 27},
-    {'nom': 'Nombres', 'chapitres': 36},
-    {'nom': 'Deutéronome', 'chapitres': 34},
-    {'nom': 'Josué', 'chapitres': 24},
-    {'nom': 'Juges', 'chapitres': 21},
-    {'nom': 'Ruth', 'chapitres': 4},
-    {'nom': '1 Samuel', 'chapitres': 31},
-    {'nom': '2 Samuel', 'chapitres': 24},
-    {'nom': '1 Rois', 'chapitres': 22},
-    {'nom': '2 Rois', 'chapitres': 25},
-    {'nom': 'Psaumes', 'chapitres': 150},
-    {'nom': 'Proverbes', 'chapitres': 31},
-    {'nom': 'Ésaïe', 'chapitres': 66},
-    {'nom': 'Jérémie', 'chapitres': 52},
+class _BibleHomeScreenState extends State<BibleHomeScreen> {
+  final List<String> _ancienTestament = const [
+    'Genèse',
+    'Exode',
+    'Lévitique',
+    'Nombres',
+    'Deutéronome',
+    'Josué',
+    'Juges',
+    'Ruth',
+    '1 Samuel',
+    '2 Samuel',
+    '1 Rois',
+    '2 Rois',
+    'Psaumes',
+    'Proverbes',
+    'Ecclésiaste',
+    'Cantique des Cantiques',
+    'Ésaïe',
+    'Jérémie',
+    'Lamentations',
+    'Ézéchiel',
+    'Daniel',
+    'Osée',
+    'Joël',
+    'Amos',
+    'Abdias',
+    'Jonas',
+    'Michée',
+    'Nahum',
+    'Habacuc',
+    'Sophonie',
+    'Aggée',
+    'Zacharie',
+    'Malachie',
   ];
 
-  final List<Map<String, dynamic>> _nouveauTestament = [
-    {'nom': 'Matthieu', 'chapitres': 28},
-    {'nom': 'Marc', 'chapitres': 16},
-    {'nom': 'Luc', 'chapitres': 24},
-    {'nom': 'Jean', 'chapitres': 21},
-    {'nom': 'Actes', 'chapitres': 28},
-    {'nom': 'Romains', 'chapitres': 16},
-    {'nom': '1 Corinthiens', 'chapitres': 16},
-    {'nom': '2 Corinthiens', 'chapitres': 13},
-    {'nom': 'Galates', 'chapitres': 6},
-    {'nom': 'Éphésiens', 'chapitres': 6},
-    {'nom': 'Philippiens', 'chapitres': 4},
-    {'nom': 'Colossiens', 'chapitres': 4},
-    {'nom': 'Hébreux', 'chapitres': 13},
-    {'nom': 'Apocalypse', 'chapitres': 22},
+  final List<String> _nouveauTestament = const [
+    'Matthieu',
+    'Marc',
+    'Luc',
+    'Jean',
+    'Actes',
+    'Romains',
+    '1 Corinthiens',
+    '2 Corinthiens',
+    'Galates',
+    'Éphésiens',
+    'Philippiens',
+    'Colossiens',
+    '1 Thessaloniciens',
+    '2 Thessaloniciens',
+    '1 Timothée',
+    '2 Timothée',
+    'Tite',
+    'Philémon',
+    'Hébreux',
+    'Jacques',
+    '1 Pierre',
+    '2 Pierre',
+    '1 Jean',
+    '2 Jean',
+    '3 Jean',
+    'Jude',
+    'Apocalypse',
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
+  void _openBook(String livre) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BibleReadingScreen(
+          livre: livre,
+          chapitre: livre == 'Psaumes' ? 23 : 1,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EeccTheme.bgWhite,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('La Sainte Bible', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Bible',
+          style: TextStyle(
+            color: Color(0xFF0F172A),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: false,
       ),
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          // Barre de recherche
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un livre, un mot, un verset...',
-                prefixIcon: const Icon(Icons.search, color: EeccTheme.textLight),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: EeccTheme.borderGrey),
+          // 3 Cartes de raccourcis : Favoris, Notes, Historique
+          Row(
+            children: [
+              Expanded(
+                child: _buildShortcutCard(
+                  icon: Icons.check,
+                  label: 'Favoris',
                 ),
-                filled: true,
-                fillColor: EeccTheme.bgGrey,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildShortcutCard(
+                  icon: Icons.description_outlined,
+                  label: 'Notes',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildShortcutCard(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Historique',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // En-tête ANCIEN TESTAMENT
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'ANCIEN TESTAMENT',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 0.8,
               ),
             ),
           ),
 
-          // 3 Cartes de raccourcis (Favoris, Notes, Historique)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildShortcutCard(
-                    icon: Icons.bookmark_outline,
-                    label: 'Favoris',
-                    color: const Color(0xFF3B82F6),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildShortcutCard(
-                    icon: Icons.edit_note,
-                    label: 'Notes',
-                    color: const Color(0xFF10B981),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _buildShortcutCard(
-                    icon: Icons.history,
-                    label: 'Historique',
-                    color: const Color(0xFF8B5CF6),
-                  ),
-                ),
-              ],
+          // Liste des livres de l'Ancien Testament
+          ..._ancienTestament.map((livre) => _buildBookTile(livre)),
+
+          const SizedBox(height: 18),
+
+          // En-tête NOUVEAU TESTAMENT
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'NOUVEAU TESTAMENT',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 0.8,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
 
-          // Onglets Ancien Testament & Nouveau Testament
-          TabBar(
-            controller: _tabController,
-            indicatorColor: EeccTheme.navy,
-            labelColor: EeccTheme.navy,
-            unselectedLabelColor: EeccTheme.textMuted,
-            labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            tabs: const [
-              Tab(text: 'Ancien Testament (39)'),
-              Tab(text: 'Nouveau Testament (27)'),
-            ],
-          ),
+          // Liste des livres du Nouveau Testament
+          ..._nouveauTestament.map((livre) => _buildBookTile(livre)),
 
-          // Liste des livres
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildBooksList(_ancienTestament),
-                _buildBooksList(_nouveauTestament),
-              ],
-            ),
-          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -155,54 +181,61 @@ class _BibleHomeScreenState extends State<BibleHomeScreen> with SingleTickerProv
   Widget _buildShortcutCard({
     required IconData icon,
     required String label,
-    required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14),
       decoration: BoxDecoration(
-        color: EeccTheme.bgGrey,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: EeccTheme.borderGrey),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 4),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: EeccTheme.navyDark)),
+          Icon(icon, size: 22, color: const Color(0xFF1E3A5F)),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E293B),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBooksList(List<Map<String, dynamic>> books) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: books.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: EeccTheme.borderGrey),
-      itemBuilder: (context, index) {
-        final b = books[index];
-        return ListTile(
-          dense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          title: Text(
-            b['nom'],
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: EeccTheme.navyDark),
+  Widget _buildBookTile(String livre) {
+    return InkWell(
+      onTap: () => _openBook(livre),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 4),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1.0),
           ),
-          subtitle: Text(
-            '${b['chapitres']} chapitres',
-            style: const TextStyle(fontSize: 11.5, color: EeccTheme.textMuted),
-          ),
-          trailing: const Icon(Icons.chevron_right, size: 18, color: EeccTheme.textLight),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => BibleReadingScreen(livre: b['nom'], chapitre: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              livre,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1E293B),
               ),
-            );
-          },
-        );
-      },
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: Color(0xFF94A3B8),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

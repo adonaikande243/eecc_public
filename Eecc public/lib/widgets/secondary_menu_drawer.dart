@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/eecc_theme.dart';
 import '../screens/communication/communications_screen.dart';
 import '../screens/media/sermons_screen.dart';
 import '../screens/media/praise_screen.dart';
@@ -9,214 +8,168 @@ import '../screens/prayer/priere_screen.dart';
 import '../screens/resources/documentation_screen.dart';
 import '../screens/resources/books_screen.dart';
 
-/// Menu secondaire latéral fidèle à la maquette 03_menu_secondaire.png
+/// Menu secondaire latéral identique pixel-perfect à 03_menu_secondaire.png
 class SecondaryMenuDrawer extends StatelessWidget {
   const SecondaryMenuDrawer({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: EeccTheme.bgWhite,
-      child: Column(
-        children: [
-          // En-tête du Menu
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 50, bottom: 20, left: 20, right: 20),
-            color: EeccTheme.navy,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.15),
-                    border: Border.all(color: Colors.white38, width: 1.5),
+      backgroundColor: Colors.white,
+      width: MediaQuery.of(context).size.width * 0.78,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // En-tête : "Menu" à gauche, chevron "<" à droite (Maquette 03_menu_secondaire.png)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Menu',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.church_outlined, color: Colors.white, size: 28),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left, color: Color(0xFF0F172A), size: 28),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'EECC',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Église Évangélique les Cohéritiers du Christ',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
 
-          // Liste des 10 rubriques de la maquette
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              children: [
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.campaign_outlined,
-                  title: 'Communications',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const CommunicationsScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.ondemand_video_outlined,
-                  title: 'Prédications',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SermonsScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.library_music_outlined,
-                  title: 'Louanges & Cantiques',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PraiseScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.event_note_outlined,
-                  title: 'Événements',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const EventsScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.volunteer_activism_outlined,
-                  title: 'Dîmes & Offrandes',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const OfferingFlowScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.pan_tool_outlined,
-                  title: 'Demandes de prière',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const PriereScreen()),
-                    );
-                  },
-                ),
-                const Divider(height: 16, color: EeccTheme.borderGrey),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.menu_book_outlined,
-                  title: 'Documentation & Statuts',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DocumentationScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.auto_stories_outlined,
-                  title: 'Livres recommandés',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const BooksScreen()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.settings_outlined,
-                  title: 'Paramètres',
-                  onTap: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Paramètres de l\'application')),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.help_outline,
-                  title: 'Aide & Contact',
-                  onTap: () {
-                    Navigator.pop(context);
-                    showAboutDialog(
-                      context: context,
-                      applicationName: 'EECC Mobile',
-                      applicationVersion: '1.0.0',
-                      applicationLegalese: '© 2026 Église Évangélique les Cohéritiers du Christ',
-                    );
-                  },
-                ),
-              ],
+            // Liste exacte des 10 rubriques avec séparateurs fins
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.wifi,
+                    title: 'Communications',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunicationsScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.play_circle_outline,
+                    title: 'Prédications',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SermonsScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.people_outline,
+                    title: 'Louanges',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PraiseScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.calendar_today_outlined,
+                    title: 'Événements',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const EventsScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.credit_card_outlined,
+                    title: 'Offrandes',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const OfferingFlowScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.pan_tool_outlined,
+                    title: 'Demandes de prière',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const PriereScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.description_outlined,
+                    title: 'Documentation',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const DocumentationScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.menu_book_outlined,
+                    title: 'Livres',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const BooksScreen()));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.person_outline,
+                    title: 'Paramètres',
+                    onTap: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Paramètres')));
+                    },
+                  ),
+                  _buildMenuItem(
+                    context,
+                    icon: Icons.smartphone_outlined,
+                    title: 'Aide',
+                    onTap: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assistance')));
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDrawerItem(
+  Widget _buildMenuItem(
     BuildContext context, {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: EeccTheme.navy, size: 22),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: EeccTheme.navyDark,
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+          leading: Icon(icon, color: const Color(0xFF1E3A5F), size: 22),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          onTap: onTap,
         ),
-      ),
-      trailing: const Icon(Icons.chevron_right, size: 18, color: EeccTheme.textLight),
-      dense: true,
-      horizontalTitleGap: 12,
-      onTap: onTap,
+        const Divider(height: 1, thickness: 1, color: Color(0xFFE2E8F0)),
+      ],
     );
   }
 }

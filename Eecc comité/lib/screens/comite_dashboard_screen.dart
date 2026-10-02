@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/eecc_theme.dart';
 
-/// Tableau de bord du Comité Directeur & Conseil d'Administration EECC
+/// Tableau de bord Comité pixel-perfect conforme à la maquette Eecc comité/01_dashboard.png
 class ComiteDashboardScreen extends StatefulWidget {
   const ComiteDashboardScreen({Key? key}) : super(key: key);
 
@@ -10,142 +10,194 @@ class ComiteDashboardScreen extends StatefulWidget {
 }
 
 class _ComiteDashboardScreenState extends State<ComiteDashboardScreen> {
-  int _currentTabIndex = 0;
+  int _currentIndex = 0;
+
+  final List<Widget> _tabs = [
+    const _ComiteOverviewTab(),
+    const _ComitesTab(),
+    const _ChoralesTab(),
+    const _MessagesTab(),
+    const _ProfilTab(),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EeccTheme.bgWhite,
-      appBar: AppBar(
-        title: const Text('Comité Directeur & Conseil', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(icon: const Icon(Icons.notifications_none), onPressed: () {}),
-          Padding(
-            padding: const EdgeInsets.only(right: 14.0),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: const Color(0xFFEFF6FF),
-              child: const Icon(Icons.person, color: EeccTheme.navy, size: 18),
+      backgroundColor: Colors.white,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _tabs,
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) => setState(() => _currentIndex = index),
+          selectedItemColor: const Color(0xFF1E3A5F),
+          unselectedItemColor: const Color(0xFF94A3B8),
+          selectedFontSize: 11,
+          unselectedFontSize: 11,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
             ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.groups_outlined),
+              activeIcon: Icon(Icons.groups),
+              label: 'Comités',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.music_note_outlined),
+              activeIcon: Icon(Icons.music_note),
+              label: 'Chorales',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline),
+              activeIcon: Icon(Icons.chat_bubble),
+              label: 'Messages',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profil',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Onglet Vue d'ensemble fidèle à 01_dashboard.png de Eecc comité
+class _ComiteOverviewTab extends StatelessWidget {
+  const _ComiteOverviewTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
           ),
+        ),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Color(0xFF0F172A), size: 24),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bandeau Comité
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1E3A8A), Color(0xFF1E293B)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'CONSEIL D\'ADMINISTRATION',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    'Gouvernance & Projets Stratégiques',
-                    style: TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Validation des budgets, suivi des chantiers et résolutions officielles.',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
+            // Salutation fidèle à la maquette
+            const Text(
+              'Bonjour, Grâce Kabongo',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w400,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 28),
 
-            // 4 Cartes Stratégiques
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatTile(
-                    'Budget Exécuté',
-                    '18 500 \$',
-                    '72% alloué',
-                    Icons.account_balance,
-                    const Color(0xFF059669),
-                    const Color(0xFFECFDF5),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatTile(
-                    'Projets Actifs',
-                    '4',
-                    'Construction & Média',
-                    Icons.foundation,
-                    const Color(0xFF2563EB),
-                    const Color(0xFFEFF6FF),
-                  ),
-                ),
-              ],
+            // Section "Mes rattachements" (Maquette 01_dashboard.png)
+            const Text(
+              'Mes rattachements',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatTile(
-                    'Prochaine Session',
-                    '14 OCT',
-                    'Ordre du jour prêt',
-                    Icons.event,
-                    const Color(0xFFD97706),
-                    const Color(0xFFFFFBEB),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatTile(
-                    'Résolutions',
-                    '18',
-                    '100% approuvées',
-                    Icons.verified_outlined,
-                    const Color(0xFF7C3AED),
-                    const Color(0xFFF5F3FF),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
 
-            // Projets en cours
-            const Text(
-              'Grands Projets de l\'Église',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: EeccTheme.navyDark),
+            // Carte 1 : Comité d'accueil / Responsable
+            _buildRattachementCard(
+              title: 'Comité d\'accueil',
+              role: 'Responsable',
+              onTap: () {},
             ),
             const SizedBox(height: 10),
 
-            _buildProjectCard(
-              title: 'Construction & Agrandissement du Grand Temple',
-              progress: 0.65,
-              budget: '12 000 \$ / 18 000 \$',
-              statut: 'En cours (Phase toiture)',
+            // Carte 2 : Chorale Voix de Grâce / Membre
+            _buildRattachementCard(
+              title: 'Chorale Voix de Grâce',
+              role: 'Membre',
+              onTap: () {},
             ),
-            _buildProjectCard(
-              title: 'Modernisation Régie Vidéo Broadcast & Caméras PTZ',
-              progress: 0.90,
-              budget: '4 500 \$ / 5 000 \$',
-              statut: 'Finalisation & Tests',
+
+            const SizedBox(height: 28),
+
+            // Section "À venir" (Maquette 01_dashboard.png)
+            const Text(
+              'À venir',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
-            _buildProjectCard(
-              title: 'Implantation Paroisse Annexe Maluku',
-              progress: 0.35,
-              budget: '2 000 \$ / 6 000 \$',
-              statut: 'Acquisition terrain',
+            const SizedBox(height: 12),
+
+            // Carte Événement à venir
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Répétition générale',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Samedi, 15h00',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: Color(0xFF1E3A5F),
+                    size: 22,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -153,83 +205,278 @@ class _ComiteDashboardScreenState extends State<ComiteDashboardScreen> {
     );
   }
 
-  Widget _buildStatTile(String label, String value, String sub, IconData icon, Color color, Color bg) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: EeccTheme.bgWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: EeccTheme.borderGrey),
+  Widget _buildRattachementCard({
+    required String title,
+    required String role,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  role,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF94A3B8),
+              size: 22,
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+}
+
+/// Onglet Comités
+class _ComitesTab extends StatelessWidget {
+  const _ComitesTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final comites = [
+      {'nom': 'Comité d\'accueil & Protocole', 'role': 'Responsable', 'membres': 18},
+      {'nom': 'Comité Multimédia & Régie', 'role': 'Membre', 'membres': 12},
+      {'nom': 'Comité Intercession', 'role': 'Membre', 'membres': 24},
+      {'nom': 'Comité Social & Entraide', 'role': 'Observateur', 'membres': 9},
+    ];
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Mes Comités', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: comites.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final c = comites[index];
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(c['nom'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Text('${c['role']} • ${c['membres']} membres', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  ],
+                ),
+                const Icon(Icons.chevron_right, color: Color(0xFF94A3B8)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Onglet Chorales
+class _ChoralesTab extends StatelessWidget {
+  const _ChoralesTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Chorales & Louange', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: EeccTheme.textMuted)),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-                child: Icon(icon, color: color, size: 16),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('Chorale Voix de Grâce', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Chip(
+                      label: Text('Membre Actif', style: TextStyle(fontSize: 11, color: Color(0xFF1E3A5F), fontWeight: FontWeight.bold)),
+                      backgroundColor: Color(0xFFEFF6FF),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('Pupitre : Alto • Répétitions le jeudi 17h et samedi 15h.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+                const Divider(height: 20),
+                Row(
+                  children: const [
+                    Icon(Icons.library_music_outlined, size: 16, color: Color(0xFF1E3A5F)),
+                    SizedBox(width: 6),
+                    Text('Répertoire : 14 cantiques au programme ce mois', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: EeccTheme.navyDark)),
-          const SizedBox(height: 2),
-          Text(sub, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Onglet Messages
+class _MessagesTab extends StatelessWidget {
+  const _MessagesTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Messages & Circulaires', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildMessageItem(
+            titre: 'Ordre du jour - Répétition générale',
+            expediteur: 'Direction Chorale Voix de Grâce',
+            date: 'Hier, 18h20',
+          ),
+          const SizedBox(height: 10),
+          _buildMessageItem(
+            titre: 'Planning des permanences d\'accueil de dimanche',
+            expediteur: 'Secrétariat Comité d\'accueil',
+            date: '02 Octobre',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProjectCard({required String title, required double progress, required String budget, required String statut}) {
+  Widget _buildMessageItem({required String titre, required String expediteur, required String date}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: EeccTheme.bgGrey,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: EeccTheme.borderGrey),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: EeccTheme.navyDark),
-                ),
-              ),
-              Text(
-                '${(progress * 100).toInt()}%',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: EeccTheme.navy),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(color: Color(0xFFEFF6FF), shape: BoxShape.circle),
+            child: const Icon(Icons.mail_outline, size: 18, color: Color(0xFF1E3A5F)),
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: const Color(0xFFE2E8F0),
-              valueColor: const AlwaysStoppedAnimation(EeccTheme.navy),
-              minHeight: 6,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(titre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                const SizedBox(height: 3),
+                Text(expediteur, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                const SizedBox(height: 4),
+                Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(statut, style: const TextStyle(fontSize: 11, color: EeccTheme.textMuted)),
-              Text(budget, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: EeccTheme.navyDark)),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Onglet Profil
+class _ProfilTab extends StatelessWidget {
+  const _ProfilTab({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Mon Profil Responsable', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+        backgroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            const CircleAvatar(
+              radius: 40,
+              backgroundColor: Color(0xFFEFF6FF),
+              child: Text('GK', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF1E3A5F))),
+            ),
+            const SizedBox(height: 14),
+            const Text('Grâce Kabongo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text('Matricule : EECC-COM-0042', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+            const SizedBox(height: 24),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.phone_outlined, color: Color(0xFF1E3A5F)),
+              title: const Text('+243 820 000 042', style: TextStyle(fontSize: 14)),
+              subtitle: const Text('Téléphone principal'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.church_outlined, color: Color(0xFF1E3A5F)),
+              title: const Text('Paroisse Centrale de Kinshasa', style: TextStyle(fontSize: 14)),
+              subtitle: const Text('Paroisse d\'attachement'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.badge_outlined, color: Color(0xFF1E3A5F)),
+              title: const Text('Responsable Comité d\'accueil', style: TextStyle(fontSize: 14)),
+              subtitle: const Text('Rôle officiel'),
+            ),
+          ],
+        ),
       ),
     );
   }

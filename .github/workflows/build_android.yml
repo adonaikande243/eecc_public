@@ -109,7 +109,7 @@ jobs:
       # -------------------------------------------------------------
       - name: Initialiser projet Android et Compiler Eecc comite
         run: |
-          cd "Eecc comité"
+          cd "Eecc comit"*
           flutter create --platforms=android --org org.eecc --project-name eecc_comite .
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
