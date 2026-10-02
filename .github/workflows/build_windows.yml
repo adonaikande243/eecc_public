@@ -1,4 +1,4 @@
-name: Compilation Windows (Studio Regie EECC)
+name: Compilation Windows (Studio Regie et Admin EECC)
 
 on:
   push:
@@ -9,8 +9,11 @@ on:
 
 jobs:
   build-windows:
-    name: Compiler EECC Regie Studio Windows
-    runs-on: windows-latest
+    name: Compiler EECC Logiciels Windows (.exe)
+    runs-on: windows-2022
+
+    env:
+      CMAKE_GENERATOR: "Visual Studio 17 2022"
 
     steps:
       - name: Recuperer le code source
@@ -37,20 +40,38 @@ jobs:
         working-directory: eecc_cloud_storage
         run: flutter pub get
 
-      - name: Generer et Compiler eecc_regie_studio
+      - name: Compiler eecc_regie_studio
         working-directory: eecc_regie_studio
         run: |
           flutter create --platforms=windows --project-name=eecc_regie_studio .
           flutter pub get
           flutter build windows --release
 
-      - name: Compresser les fichiers de sortie en ZIP
+      - name: Compresser la Regie Studio en ZIP
         run: |
           Compress-Archive -Path "eecc_regie_studio\build\windows\x64\runner\Release\*" -DestinationPath "EECC_Regie_Studio_Windows.zip" -Force
 
-      - name: Publier le package ZIP comme Artifact GitHub
+      - name: Publier la Regie Studio comme Artifact GitHub
         uses: actions/upload-artifact@v4
         with:
           name: EECC_Regie_Studio_Windows_x64
           path: EECC_Regie_Studio_Windows.zip
+          retention-days: 30
+
+      - name: Compiler Eecc admin
+        working-directory: Eecc admin
+        run: |
+          flutter create --platforms=windows --project-name=eecc_admin .
+          flutter pub get
+          flutter build windows --release
+
+      - name: Compresser Eecc Admin en ZIP
+        run: |
+          Compress-Archive -Path "Eecc admin\build\windows\x64\runner\Release\*" -DestinationPath "EECC_Admin_Windows.zip" -Force
+
+      - name: Publier Eecc Admin comme Artifact GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: EECC_Admin_Windows_x64
+          path: EECC_Admin_Windows.zip
           retention-days: 30

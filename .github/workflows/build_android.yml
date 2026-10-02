@@ -47,7 +47,12 @@ jobs:
       - name: Initialiser projet Android et Compiler Eecc public
         run: |
           cd "Eecc public"
+          rm -rf android
           flutter create --platforms=android --org org.eecc --project-name eecc_public .
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 35/g' android/app/build.gradle
+          fi
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
@@ -68,7 +73,12 @@ jobs:
       - name: Initialiser projet Android et Compiler Eecc pasteur
         run: |
           cd "Eecc pasteur"
+          rm -rf android
           flutter create --platforms=android --org org.eecc --project-name eecc_pasteur .
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 35/g' android/app/build.gradle
+          fi
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
@@ -89,7 +99,12 @@ jobs:
       - name: Initialiser projet Android et Compiler Eecc admin
         run: |
           cd "Eecc admin"
+          rm -rf android
           flutter create --platforms=android --org org.eecc --project-name eecc_admin .
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 35/g' android/app/build.gradle
+          fi
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
@@ -110,13 +125,20 @@ jobs:
       - name: Initialiser projet Android et Compiler Eecc comite
         run: |
           cd "Eecc comit"*
+          rm -rf android
           flutter create --platforms=android --org org.eecc --project-name eecc_comite .
+          if [ -f android/app/build.gradle ]; then
+            sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 35/g' android/app/build.gradle
+          fi
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
 
       - name: Renommer APK Comite
         run: |
-          cp "Eecc comité/build/app/outputs/flutter-apk/app-release.apk" "EECC_Comite_Release.apk"
+          cd "Eecc comit"*
+          cp build/app/outputs/flutter-apk/app-release.apk ../EECC_Comite_Release.apk
+          cd ..
 
       - name: Publier APK Comite comme Artifact GitHub
         uses: actions/upload-artifact@v4

@@ -73,7 +73,8 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
       devise: deviseCode,
       typeOffrande: _selectedType,
       nomFidele: _nomController.text.trim().isEmpty ? 'Fidèle EECC' : _nomController.text.trim(),
-      telephone: _telephoneController.text.trim(),
+      telephone: _telephoneController.text.trim().isEmpty ? '000000000' : _telephoneController.text.trim(),
+      email: 'fidele@eecc.org',
       mode: mode,
     );
 

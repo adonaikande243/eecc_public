@@ -12,12 +12,12 @@ jobs:
     name: Compiler EECC Régie Studio pour Windows (.exe)
     runs-on: windows-2022
 
+    env:
+      CMAKE_GENERATOR: "Visual Studio 17 2022"
+
     steps:
       - name: Récupérer le code source
         uses: actions/checkout@v4
-
-      - name: Configurer l'environnement Visual Studio C++ (MSVC)
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Installer Flutter SDK
         uses: subosito/flutter-action@v2
@@ -37,20 +37,19 @@ jobs:
           New-Item -ItemType Directory -Force -Path "eecc_cloud_storage\assets\credentials"
 
       - name: Dépendances eecc_cloud_storage
-        run: |
-          cd eecc_cloud_storage
-          flutter pub get
+        working-directory: eecc_cloud_storage
+        run: flutter pub get
 
       - name: Initialiser le projet Windows et Compiler la Régie Studio
+        working-directory: eecc_regie_studio
         run: |
-          cd eecc_regie_studio
           flutter create --platforms=windows --org org.eecc --project-name eecc_regie_studio .
           flutter pub get
           flutter build windows --release
 
       - name: Compresser le dossier exécutable de la Régie en ZIP
         run: |
-          Compress-Archive -Path "eecc_regie_studio\build\windows\x64\runner\Release\*" -DestinationPath "EECC_Regie_Studio_Windows.zip"
+          Compress-Archive -Path "eecc_regie_studio\build\windows\x64\runner\Release\*" -DestinationPath "EECC_Regie_Studio_Windows.zip" -Force
 
       - name: Publier le logiciel Régie Studio (.zip) comme Artifact GitHub
         uses: actions/upload-artifact@v4
