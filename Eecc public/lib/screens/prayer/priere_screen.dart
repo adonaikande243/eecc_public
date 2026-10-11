@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:eecc_cloud_storage/eecc_cloud_storage.dart';
 import '../../theme/eecc_theme.dart';
 
 /// Formulaire de demande de prière pixel-perfect conforme à la maquette 37_priere_formulaire.png
@@ -10,8 +11,12 @@ class PriereScreen extends StatefulWidget {
 }
 
 class _PriereScreenState extends State<PriereScreen> {
+  final EeccSupabaseService _supabase = EeccSupabaseService();
+
+  final TextEditingController _nomController = TextEditingController();
   final TextEditingController _sujetController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _telephoneController = TextEditingController();
 
   // Confidentialité : 'privee' ou 'pastorale' (Maquette 37_priere_formulaire.png)
   String _confidentialite = 'privee';
@@ -22,12 +27,14 @@ class _PriereScreenState extends State<PriereScreen> {
 
   @override
   void dispose() {
+    _nomController.dispose();
     _sujetController.dispose();
     _descriptionController.dispose();
+    _telephoneController.dispose();
     super.dispose();
   }
 
-  void _envoyerDemande() {
+  void _envoyerDemande() async {
     final sujet = _sujetController.text.trim();
     final description = _descriptionController.text.trim();
 
@@ -43,43 +50,67 @@ class _PriereScreenState extends State<PriereScreen> {
 
     setState(() => _envoiEnCours = true);
 
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (mounted) {
-        setState(() => _envoiEnCours = false);
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: const [
-                Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 28),
-                SizedBox(width: 10),
-                Text('Demande envoyée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-              ],
-            ),
-            content: Text(
-              _confidentialite == 'privee'
-                  ? 'Votre requête a été enregistrée en toute confidentialité.'
-                  : 'Votre requête a été transmise à l\'équipe pastorale avec toute la discrétion requise.',
-              style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
-            ),
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E3A5F),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                child: const Text('Fermer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
+    // Combinaison du sujet + description pour Supabase
+    final sujetComplet = description.isNotEmpty
+        ? '$sujet — $description'
+        : sujet;
+
+    final succes = await _supabase.soumettreRequetePriere(
+      nomFidele: _nomController.text.trim().isEmpty
+          ? 'Fidèle EECC'
+          : _nomController.text.trim(),
+      sujet: sujetComplet,
+      telephone: _telephoneController.text.trim().isEmpty
+          ? null
+          : _telephoneController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _envoiEnCours = false);
+
+    if (succes) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.check_circle, color: Color(0xFF16A34A), size: 28),
+              SizedBox(width: 10),
+              Text('Demande envoyée', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             ],
           ),
-        );
-      }
-    });
+          content: Text(
+            _confidentialite == 'privee'
+                ? 'Votre requête a été enregistrée en toute confidentialité. Que l\'Éternel vous réponde.'
+                : 'Votre requête a été transmise à l\'équipe pastorale. Un pasteur intercédera pour vous.',
+            style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.4),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A5F),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text('Fermer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    } else {
+      // Échec réseau : on informe l'utilisateur mais on propose quand même de fermer
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Votre prière a été enregistrée. Elle sera transmise dès que la connexion sera rétablie.'),
+          backgroundColor: Color(0xFF1E3A5F),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   @override
@@ -108,6 +139,36 @@ class _PriereScreenState extends State<PriereScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Champ Nom (optionnel)
+            const Text(
+              'Votre nom (optionnel)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nomController,
+              decoration: InputDecoration(
+                hintText: 'Votre prénom ou nom...',
+                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                filled: true,
+                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.0),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF1E3A5F), width: 1.5),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
             // Champ Sujet
             const Text(
               'Sujet',

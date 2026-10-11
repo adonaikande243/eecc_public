@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import '../core/services/bible_api_service.dart';
 
-/// Module de projection biblique fidèle à la maquette 17_media_bible.png
+enum AnimationType { fondu, glissementBas, zoomIn, machineAEcrire }
+
+/// Module de projection biblique avec animations avancées et personnalisation complète des couleurs
 class BibleProjectionDialog extends StatefulWidget {
   const BibleProjectionDialog({Key? key}) : super(key: key);
 
@@ -8,50 +11,110 @@ class BibleProjectionDialog extends StatefulWidget {
   State<BibleProjectionDialog> createState() => _BibleProjectionDialogState();
 }
 
-class _BibleProjectionDialogState extends State<BibleProjectionDialog> {
+class _BibleProjectionDialogState extends State<BibleProjectionDialog> with SingleTickerProviderStateMixin {
+  final BibleApiService _bibleApi = BibleApiService();
+
+  String _selectedVersion = 'LSG';
   String _selectedBook = 'Jean';
   int _selectedChapter = 3;
   int _selectedVerse = 16;
-  int _selectedThemeIndex = 1; // 0: Noir/Or, 1: Bleu Nuit, 2: Blanc, 3: Pourpre
 
-  final List<String> _books = ['Genèse', 'Exode', 'Psaumes', 'Proverbes', 'Ésaïe', 'Matthieu', 'Marc', 'Luc', 'Jean', 'Romains', 'Apocalypse'];
+  // Personnalisation dynamique des couleurs
+  Color _customBgColor = const Color(0xFF0F172A);
+  Color _customTextColor = const Color(0xFFFBBF24); // Or
+  double _fontSize = 24.0;
 
-  final Map<int, String> _themes = {
-    0: 'Noir & Or',
-    1: 'Bleu Nuit Pro',
-    2: 'Blanc Épuré',
-    3: 'Pourpre Royal',
-  };
+  // Type d'animation de projection
+  AnimationType _animationType = AnimationType.fondu;
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+  late Animation<double> _scaleAnim;
 
-  final List<Color> _bgColors = [
-    const Color(0xFF0F172A),
-    const Color(0xFF1E3A8A),
-    Colors.white,
-    const Color(0xFF581C87),
+  String _verseText = '« Car Dieu a tant aimé le monde qu\'il a donné son Fils unique, afin que quiconque croit en lui ne périsse point, mais qu\'il ait la vie éternelle. »';
+  bool _isLoading = false;
+
+  final List<String> _books = [
+    'Genèse', 'Exode', 'Psaumes', 'Proverbes', 'Ésaïe', 'Jérémie',
+    'Matthieu', 'Marc', 'Luc', 'Jean', 'Actes', 'Romains', 'Philippiens', 'Apocalypse'
   ];
 
-  final List<Color> _textColors = [
-    const Color(0xFFFBBF24), // Or
-    Colors.white,
-    const Color(0xFF0F172A),
-    Colors.white,
+  final List<Color> _paletteCouleursBg = [
+    const Color(0xFF0F172A), // Noir Slate
+    const Color(0xFF1E3A8A), // Bleu Nuit
+    const Color(0xFF064E3B), // Vert Émeraude
+    const Color(0xFF581C87), // Pourpre Royal
+    const Color(0xFF7F1D1D), // Bordeaux
+    const Color(0xFF18181B), // Noir Carbone
+    const Color(0xFFF8FAFC), // Blanc Pur
   ];
 
-  String _getVerseText() {
-    if (_selectedBook == 'Jean' && _selectedChapter == 3 && _selectedVerse == 16) {
-      return '« Car Dieu a tant aimé le monde qu\'il a donné son Fils unique, afin que quiconque croit en lui ne périsse point, mais qu\'il ait la vie éternelle. »';
+  final List<Color> _paletteCouleursTexte = [
+    const Color(0xFFFBBF24), // Or Sacré
+    Colors.white,
+    const Color(0xFF38BDF8), // Bleu Cyan
+    const Color(0xFF4ADE80), // Vert Lumineux
+    const Color(0xFFF472B6), // Rose Doux
+    const Color(0xFF0F172A), // Noir Profond
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeInOut);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.25), end: Offset.zero).animate(
+      CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic),
+    );
+    _scaleAnim = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic),
+    );
+
+    _fetchVerse();
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchVerse() async {
+    setState(() => _isLoading = true);
+    final text = await _bibleApi.chargerVerset(
+      livre: _selectedBook,
+      chapitre: _selectedChapter,
+      verset: _selectedVerse,
+      version: _selectedVersion,
+    );
+    if (mounted) {
+      setState(() {
+        _verseText = text;
+        _isLoading = false;
+      });
+      _animCtrl.forward(from: 0.0);
     }
-    return '« Ta parole est une lampe à mes pieds, et une lumière sur mon sentier. »';
+  }
+
+  void _rejouerAnimation() {
+    _animCtrl.forward(from: 0.0);
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1E293B),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: const Color(0xFF0F172A),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Color(0xFF1E293B), width: 1.5),
+      ),
       child: Container(
-        width: 950,
-        height: 620,
+        width: 1080,
+        height: 680,
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -60,12 +123,28 @@ class _BibleProjectionDialogState extends State<BibleProjectionDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.menu_book, color: Color(0xFF3B82F6), size: 24),
-                    SizedBox(width: 10),
-                    Text(
-                      'PROJECTION BIBLIQUE EN DIRECT',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 0.8),
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.menu_book, color: Color(0xFF38BDF8), size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'PROJECTION BIBLIQUE : ANIMATIONS & HABILLAGE BROADCAST',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14, letterSpacing: 0.8),
+                        ),
+                        Text(
+                          'Transitions animées, sélection libre de palette chromatique et API multi-traductions',
+                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -82,97 +161,208 @@ class _BibleProjectionDialogState extends State<BibleProjectionDialog> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Sélecteur Livre / Chapitre / Verset (Gauche)
+                  // Colonne Gauche : Sélecteurs de Texte & de Style (340px)
                   SizedBox(
-                    width: 280,
+                    width: 340,
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
+                        color: const Color(0xFF020617),
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white10),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: ListView(
                         children: [
-                          const Text('SÉLECTION DU PASSAGE', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 10),
+                          const Text('VERSION DE LA BIBLE (API)', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
                           DropdownButtonFormField<String>(
-                            value: _selectedBook,
+                            value: _selectedVersion,
                             dropdownColor: const Color(0xFF1E293B),
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: 'Livre',
-                              labelStyle: TextStyle(color: Colors.white60),
-                              border: OutlineInputBorder(),
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFF0F172A),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
                             ),
-                            items: _books.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
-                            onChanged: (val) => setState(() => _selectedBook = val!),
+                            items: BibleApiService.versionsDisponibles.map((v) {
+                              return DropdownMenuItem(value: v.code, child: Text(v.name));
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedVersion = val);
+                                _fetchVerse();
+                              }
+                            },
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
+
+                          // Livre & Chapitre & Verset
+                          const Text('PASSAGE BIBLIQUE', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
                           Row(
                             children: [
                               Expanded(
-                                child: TextFormField(
-                                  initialValue: '$_selectedChapter',
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Chapitre',
-                                    labelStyle: TextStyle(color: Colors.white60),
-                                    border: OutlineInputBorder(),
+                                flex: 2,
+                                child: DropdownButtonFormField<String>(
+                                  value: _selectedBook,
+                                  dropdownColor: const Color(0xFF1E293B),
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFF0F172A),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
                                   ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (val) => setState(() => _selectedChapter = int.tryParse(val) ?? 1),
+                                  items: _books.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _selectedBook = val);
+                                      _fetchVerse();
+                                    }
+                                  },
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Expanded(
-                                child: TextFormField(
-                                  initialValue: '$_selectedVerse',
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Verset',
-                                    labelStyle: TextStyle(color: Colors.white60),
-                                    border: OutlineInputBorder(),
+                                child: DropdownButtonFormField<int>(
+                                  value: _selectedChapter,
+                                  dropdownColor: const Color(0xFF1E293B),
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFF0F172A),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
                                   ),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (val) => setState(() => _selectedVerse = int.tryParse(val) ?? 1),
+                                  items: List.generate(50, (i) => i + 1).map((c) => DropdownMenuItem(value: c, child: Text('Ch. $c'))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _selectedChapter = val);
+                                      _fetchVerse();
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: DropdownButtonFormField<int>(
+                                  value: _selectedVerse,
+                                  dropdownColor: const Color(0xFF1E293B),
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: const Color(0xFF0F172A),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide.none),
+                                  ),
+                                  items: List.generate(80, (i) => i + 1).map((v) => DropdownMenuItem(value: v, child: Text('V. $v'))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _selectedVerse = val);
+                                      _fetchVerse();
+                                    }
+                                  },
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          const Divider(color: Colors.white12, height: 20),
 
-                          // Choix du thème visuel (4 vignettes 17_media_bible.png)
-                          const Text('THÈME DE PROJECTION', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 10),
+                          // 1. Choix du type d'Animation
+                          const Text('ANIMATION DE TRANSITION', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _buildAnimChip('Fondu Enchaîné', AnimationType.fondu),
+                              _buildAnimChip('Glissement (Slide)', AnimationType.glissementBas),
+                              _buildAnimChip('Zoom Dynamique', AnimationType.zoomIn),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+
+                          // 2. Choix de la couleur de FOND (Background)
+                          const Text('COULEUR DU FOND DE PROJECTION', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            children: _paletteCouleursBg.map((color) {
+                              final isSel = _customBgColor == color;
+                              return InkWell(
+                                onTap: () => setState(() => _customBgColor = color),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSel ? Colors.amberAccent : Colors.white24,
+                                      width: isSel ? 3.0 : 1.0,
+                                    ),
+                                  ),
+                                  child: isSel ? const Icon(Icons.check, size: 16, color: Colors.amberAccent) : null,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // 3. Choix de la couleur du TEXTE
+                          const Text('COULEUR DE TYPOGRAPHIE', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            children: _paletteCouleursTexte.map((color) {
+                              final isSel = _customTextColor == color;
+                              return InkWell(
+                                onTap: () => setState(() => _customTextColor = color),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSel ? const Color(0xFF38BDF8) : Colors.white24,
+                                      width: isSel ? 3.0 : 1.0,
+                                    ),
+                                  ),
+                                  child: isSel ? const Icon(Icons.check, size: 16, color: Colors.blue) : null,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // 4. Taille de police
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              for (int i = 0; i < 4; i++)
-                                InkWell(
-                                  onTap: () => setState(() => _selectedThemeIndex = i),
-                                  child: Container(
-                                    width: 52,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: _bgColors[i],
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: _selectedThemeIndex == i ? Colors.white : Colors.white30,
-                                        width: _selectedThemeIndex == i ? 2.5 : 1,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text('Aa', style: TextStyle(color: _textColors[i], fontWeight: FontWeight.bold, fontSize: 13)),
-                                    ),
-                                  ),
-                                ),
+                              const Text('TAILLE DU TEXTE', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                              Text('${_fontSize.toInt()} px', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                             ],
                           ),
-                          const Spacer(),
-                          Text(
-                            'Thème actif : ${_themes[_selectedThemeIndex]}',
-                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                          Slider(
+                            value: _fontSize,
+                            min: 16.0,
+                            max: 36.0,
+                            activeColor: const Color(0xFF38BDF8),
+                            onChanged: (val) => setState(() => _fontSize = val),
+                          ),
+
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF38BDF8),
+                              side: const BorderSide(color: Color(0xFF38BDF8)),
+                              minimumSize: const Size(double.infinity, 36),
+                            ),
+                            icon: const Icon(Icons.play_arrow, size: 16),
+                            label: const Text('REJOUER L\'ANIMATION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                            onPressed: _rejouerAnimation,
                           ),
                         ],
                       ),
@@ -180,90 +370,131 @@ class _BibleProjectionDialogState extends State<BibleProjectionDialog> {
                   ),
                   const SizedBox(width: 16),
 
-                  // Aperçu Diapositive Vidéoprojecteur (Droite)
+                  // Aperçu Projection 16:9 Animé (Droite)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text('APERÇU SORTIE VIDÉOPROJECTEUR (16:9)', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('APERÇU DU SIGNAL PROJETÉ (ÉCRAN TEMPLE & STREAMING)', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                            if (_isLoading)
+                              const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.amberAccent)),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(
-                              color: _bgColors[_selectedThemeIndex],
+                              color: _customBgColor,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white24),
-                              boxShadow: [
-                                BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 10),
-                              ],
+                              border: Border.all(color: Colors.white24, width: 2),
+                              boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 10)],
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$_selectedBook $_selectedChapter : $_selectedVerse',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 2,
-                                    color: _selectedThemeIndex == 0 ? const Color(0xFFFBBF24) : _textColors[_selectedThemeIndex].withOpacity(0.8),
-                                  ),
-                                ),
-                                const SizedBox(height: 18),
-                                Text(
-                                  _getVerseText(),
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    height: 1.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: _textColors[_selectedThemeIndex],
-                                  ),
-                                ),
-                              ],
+                            child: AnimatedBuilder(
+                              animation: _animCtrl,
+                              builder: (context, child) {
+                                Widget animatedContent = Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _verseText,
+                                      style: TextStyle(
+                                        color: _customTextColor,
+                                        fontSize: _fontSize,
+                                        fontWeight: FontWeight.bold,
+                                        height: 1.45,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: _customTextColor.withOpacity(0.3)),
+                                      ),
+                                      child: Text(
+                                        '$_selectedBook $_selectedChapter:$_selectedVerse ($_selectedVersion)',
+                                        style: TextStyle(
+                                          color: _customTextColor.withOpacity(0.95),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+
+                                if (_animationType == AnimationType.fondu) {
+                                  return FadeTransition(opacity: _fadeAnim, child: animatedContent);
+                                } else if (_animationType == AnimationType.glissementBas) {
+                                  return SlideTransition(
+                                    position: _slideAnim,
+                                    child: FadeTransition(opacity: _fadeAnim, child: animatedContent),
+                                  );
+                                } else {
+                                  return ScaleTransition(
+                                    scale: _scaleAnim,
+                                    child: FadeTransition(opacity: _fadeAnim, child: animatedContent),
+                                  );
+                                }
+                              },
                             ),
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 16),
 
-                        // Boutons de déclenchement broadcast
+                        // Boutons de pilotage
                         Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
-                                style: OutlinedButton.styleFrom(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
                                   foregroundColor: Colors.white,
-                                  side: const BorderSide(color: Colors.white24),
                                   padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                 ),
+                                icon: const Icon(Icons.tv, size: 20),
+                                label: const Text('ENVOYER EN STANDBY (PREVIEW)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                 onPressed: () {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Verset envoyé dans la fenêtre de Prévisualisation')),
+                                    SnackBar(
+                                      content: Text('Verset animé préparé en Prévisualisation'),
+                                      duration: const Duration(seconds: 2),
+                                    ),
                                   );
                                 },
-                                child: const Text('Envoyer vers Preview'),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Expanded(
-                              child: ElevatedButton(
+                              child: ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFDC2626),
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                 ),
+                                icon: const Icon(Icons.live_tv, size: 20),
+                                label: const Text('PROJETER EN DIRECT (ON AIR)', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
                                 onPressed: () {
                                   Navigator.pop(context);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      backgroundColor: Colors.red,
-                                      content: Text('Verset projeté DIRECTEMENT sur l\'écran On-Air & Projecteur !'),
+                                      backgroundColor: Color(0xFFDC2626),
+                                      content: Text('Verset projeté immédiatement à l\'antenne avec transition animée !'),
+                                      duration: Duration(seconds: 3),
                                     ),
                                   );
                                 },
-                                child: const Text('PROJETER DIRECT (ON AIR)', style: TextStyle(fontWeight: FontWeight.bold)),
                               ),
                             ),
                           ],
@@ -277,6 +508,22 @@ class _BibleProjectionDialogState extends State<BibleProjectionDialog> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAnimChip(String label, AnimationType type) {
+    final isSel = _animationType == type;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 11, color: isSel ? Colors.white : Colors.white70, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+      selected: isSel,
+      selectedColor: const Color(0xFF2563EB),
+      backgroundColor: const Color(0xFF0F172A),
+      onSelected: (val) {
+        if (val) {
+          setState(() => _animationType = type);
+          _rejouerAnimation();
+        }
+      },
     );
   }
 }

@@ -78,6 +78,24 @@ class _OfferingFlowScreenState extends State<OfferingFlowScreen> {
       mode: mode,
     );
 
+    if (res.succes) {
+      // Synchronisation persistante avec Supabase
+      try {
+        await EeccSupabaseService().enregistrerOffrande(
+          reference: res.reference,
+          montant: montantDouble,
+          devise: deviseCode,
+          typeOffrande: _selectedType,
+          nomFidele: _nomController.text.trim().isEmpty ? 'Fidèle EECC' : _nomController.text.trim(),
+          canal: passerelleNom,
+          telephone: _telephoneController.text.trim(),
+          email: 'fidele@eecc.org',
+        );
+      } catch (e) {
+        debugPrint('[OfferingFlow] Erreur sync Supabase: $e');
+      }
+    }
+
     setState(() => _isProcessing = false);
 
     if (res.succes) {

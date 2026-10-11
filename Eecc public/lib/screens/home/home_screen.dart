@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:eecc_cloud_storage/eecc_cloud_storage.dart';
 import '../../theme/eecc_theme.dart';
 import '../auth/login_screen.dart';
 import '../communication/communications_screen.dart';
@@ -64,44 +65,141 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 18),
 
-            // 1. Bandeau En direct — culte de dimanche (Maquette 04_accueil_visiteur.png)
-            InkWell(
-              onTap: () {
-                if (onNavigateTab != null) onNavigateTab!(1); // Aller à Direct
-              },
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFBEBEB),
+            // 1. Bandeau En direct — Récupération dynamique depuis Supabase
+            StreamBuilder<EeccLiveSession?>(
+              stream: EeccSupabaseService().ecouterLiveEnCours(intervalle: const Duration(seconds: 10)),
+              builder: (context, snapshot) {
+                final live = snapshot.data;
+                final isLive = live != null && live.isLive;
+
+                return InkWell(
+                  onTap: () {
+                    if (onNavigateTab != null) onNavigateTab!(1); // Aller à Direct
+                  },
                   borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFDC2626),
-                        shape: BoxShape.circle,
-                      ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: isLive ? const Color(0xFFFBEBEB) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'En direct — culte de dimanche',
-                        style: TextStyle(
-                          color: Color(0xFF8B1E1E),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: isLive ? const Color(0xFFDC2626) : const Color(0xFF64748B),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            isLive
+                                ? 'En direct — ${live.titre}'
+                                : 'Diffusion terminée — Voir le prochain culte',
+                            style: TextStyle(
+                              color: isLive ? const Color(0xFF8B1E1E) : const Color(0xFF334155),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          color: isLive ? const Color(0xFF8B1E1E) : const Color(0xFF64748B),
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            // 1. BIS : Affiches & Annonces programmées depuis la Régie (avec temps de validité)
+            StreamBuilder<List<Map<String, dynamic>>>(
+              stream: EeccSupabaseService().ecouterAffichesActives(pourLive: false, intervalle: const Duration(seconds: 8)),
+              builder: (context, snapshot) {
+                final affiches = snapshot.data ?? [];
+                if (affiches.isEmpty) return const SizedBox.shrink();
+
+                final affiche = affiches.first;
+                final titre = affiche['titre']?.toString() ?? 'Annonce officielle';
+                final sousTitre = affiche['sous_titre']?.toString();
+                final imageUrl = affiche['image_url']?.toString();
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E3A8A), Color(0xFF0F172A)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.campaign, color: Colors.amberAccent, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.amberAccent.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('ANNONCE EN COURS', style: TextStyle(color: Colors.amberAccent, fontSize: 9.5, fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              titre,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                            ),
+                            if (sousTitre != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                sousTitre,
+                                style: const TextStyle(color: Colors.white70, fontSize: 11.5),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      if (imageUrl != null && imageUrl.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.network(
+                            imageUrl,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.white38),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
 
             // 2. Carte Verset du jour (Fond gris chaud #F5F5F2, coins arrondis)
             Container(

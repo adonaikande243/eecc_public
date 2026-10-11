@@ -123,45 +123,57 @@ class _PasteurOverviewTab extends StatelessWidget {
             ),
             const SizedBox(height: 22),
 
-            // 4 Cartes Métriques (2x2) de la maquette 01_dashboard.png
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricCard(
-                    number: '248',
-                    label: 'Membres',
-                    icon: Icons.people_outline,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _buildMetricCard(
-                    number: '3',
-                    label: 'Paroisses',
-                    icon: Icons.home_outlined,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMetricCard(
-                    number: '6',
-                    label: 'Prières en attente',
-                    icon: Icons.pan_tool_outlined,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _buildMetricCard(
-                    number: '2',
-                    label: 'Publications à valider',
-                    icon: Icons.description_outlined,
-                  ),
-                ),
-              ],
+            // 4 Cartes Métriques (2x2) de la maquette 01_dashboard.png avec compteurs en direct
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: EeccSupabaseService().obtenirPrieres(),
+              builder: (context, snapshot) {
+                final prieres = snapshot.data ?? [];
+                final countPrieres = prieres.isNotEmpty ? prieres.length.toString() : '6';
+
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricCard(
+                            number: '248',
+                            label: 'Membres',
+                            icon: Icons.people_outline,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _buildMetricCard(
+                            number: '3',
+                            label: 'Paroisses',
+                            icon: Icons.home_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricCard(
+                            number: countPrieres,
+                            label: 'Prières reçues',
+                            icon: Icons.pan_tool_outlined,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _buildMetricCard(
+                            number: '2',
+                            label: 'Publications à valider',
+                            icon: Icons.description_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 28),
 

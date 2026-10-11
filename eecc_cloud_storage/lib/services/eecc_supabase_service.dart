@@ -262,4 +262,181 @@ class EeccSupabaseService {
     }
     return [];
   }
+
+  // ===========================================================================
+  // GESTION DES PRIÈRES (Soumission depuis App Mobile)
+  // ===========================================================================
+
+  /// Soumet une demande de prière dans la table eecc_prieres
+  Future<bool> soumettreRequetePriere({
+    required String nomFidele,
+    required String sujet,
+    String? telephone,
+    String? culteId,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/rest/v1/eecc_prieres');
+      final body = <String, dynamic>{
+        'nom_fidele': nomFidele.trim().isEmpty ? 'Fidèle EECC' : nomFidele.trim(),
+        'sujet': sujet.trim(),
+        'statut': 'En attente',
+      };
+      if (telephone != null && telephone.trim().isNotEmpty) {
+        body['telephone'] = telephone.trim();
+      }
+      if (culteId != null) {
+        body['culte_id'] = culteId;
+      }
+      final response = await http.post(
+        url,
+        headers: _headers(),
+        body: jsonEncode(body),
+      );
+      debugPrint('[Supabase] Prière soumise (${response.statusCode}): $sujet');
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('[Supabase] Erreur soumission prière: $e');
+      return false;
+    }
+  }
+
+  // ===========================================================================
+  // ENREGISTREMENT DES OFFRANDES (depuis App Mobile)
+  // ===========================================================================
+
+  /// Enregistre une offrande validée dans Supabase après traitement Maishapay
+  Future<bool> enregistrerOffrande({
+    required String reference,
+    required double montant,
+    required String devise,
+    required String typeOffrande,
+    required String nomFidele,
+    required String canal,
+    String? telephone,
+    String? email,
+    Map<String, dynamic>? detailsTransaction,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/rest/v1/eecc_offrandes');
+      final body = <String, dynamic>{
+        'reference': reference,
+        'montant': montant,
+        'devise': devise,
+        'type_offrande': typeOffrande,
+        'nom_fidele': nomFidele,
+        'canal': canal,
+        'statut': 'VALIDE',
+      };
+      if (telephone != null && telephone.isNotEmpty) body['telephone'] = telephone;
+      if (email != null && email.isNotEmpty) body['email'] = email;
+      if (detailsTransaction != null) body['details_transaction'] = detailsTransaction;
+
+      final response = await http.post(
+        url,
+        headers: _headers(),
+        body: jsonEncode(body),
+      );
+      debugPrint('[Supabase] Offrande enregistrée (${response.statusCode}): $reference');
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('[Supabase] Erreur enregistrement offrande: $e');
+      return false;
+    }
+  }
+
+  /// Récupère la liste des offrandes enregistrées (pour Admin / Pasteur)
+  Future<List<Map<String, dynamic>>> obtenirOffrandes({int limite = 50}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/rest/v1/eecc_offrandes?order=created_at.desc&limit=$limite');
+      final response = await http.get(url, headers: _headers(useServiceRole: true));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('[Supabase] Erreur lecture offrandes: $e');
+    }
+    return [];
+  }
+
+  /// Récupère la liste des requêtes de prières enregistrées (pour Admin / Pasteur)
+  Future<List<Map<String, dynamic>>> obtenirPrieres({int limite = 50}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/rest/v1/eecc_prieres?order=created_at.desc&limit=$limite');
+      final response = await http.get(url, headers: _headers(useServiceRole: true));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('[Supabase] Erreur lecture prières: $e');
+    }
+    return [];
+  }
+
+  // ===========================================================================
+  // GESTION DES AFFICHES ET ANNONCES (Projection Live & App Publique)
+  // ===========================================================================
+
+  /// Publie une affiche avec durée programmée (en secondes ou minutes)
+  Future<bool> posterAffiche({
+    required String titre,
+    String? sousTitre,
+    String? imageUrl,
+    int dureeSecondes = 60,
+    bool actifSurAppPublic = true,
+    bool actifSurProjectionLive = true,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/rest/v1/eecc_affiches');
+      final expireAt = DateTime.now().add(Duration(seconds: dureeSecondes)).toIso8601String();
+      final body = {
+        'titre': titre,
+        if (sousTitre != null) 'sous_titre': sousTitre,
+        if (imageUrl != null) 'image_url': imageUrl,
+        'duree_secondes': dureeSecondes,
+        'actif_sur_app_public': actifSurAppPublic,
+        'actif_sur_projection_live': actifSurProjectionLive,
+        'expire_at': expireAt,
+      };
+
+      final response = await http.post(
+        url,
+        headers: _headers(useServiceRole: true),
+        body: jsonEncode(body),
+      );
+      debugPrint('[Supabase] Affiche postée (${response.statusCode}): $titre');
+      return response.statusCode == 201 || response.statusCode == 200;
+    } catch (e) {
+      debugPrint('[Supabase] Erreur publication affiche: $e');
+      return false;
+    }
+  }
+
+  /// Récupère les affiches encore valides et actives pour l'application public
+  Future<List<Map<String, dynamic>>> obtenirAffichesActives({bool pourLive = false}) async {
+    try {
+      final maintenant = DateTime.now().toIso8601String();
+      final filtreCible = pourLive ? 'actif_sur_projection_live=eq.true' : 'actif_sur_app_public=eq.true';
+      final url = Uri.parse(
+        '$_baseUrl/rest/v1/eecc_affiches?$filtreCible&expire_at=gt.$maintenant&order=created_at.desc',
+      );
+      final response = await http.get(url, headers: _headers());
+      if (response.statusCode == 200) {
+        final List<dynamic> list = jsonDecode(response.body);
+        return list.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint('[Supabase] Erreur lecture affiches: $e');
+    }
+    return [];
+  }
+
+  /// Flux continu pour mettre à jour automatiquement l'affichage des affiches
+  Stream<List<Map<String, dynamic>>> ecouterAffichesActives({bool pourLive = false, Duration intervalle = const Duration(seconds: 10)}) async* {
+    while (true) {
+      yield await obtenirAffichesActives(pourLive: pourLive);
+      await Future.delayed(intervalle);
+    }
+  }
 }

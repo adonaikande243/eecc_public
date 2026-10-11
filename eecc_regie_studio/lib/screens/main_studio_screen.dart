@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/services/scene_manager.dart';
+import '../core/services/ffmpeg_streaming_service.dart';
+import '../core/services/regie_orchestrator_service.dart';
 import '../widgets/preview_canvas.dart';
 import '../widgets/scene_panel.dart';
 import '../widgets/sources_panel.dart';
 import '../widgets/audio_mixer_panel.dart';
-import '../core/services/ffmpeg_streaming_service.dart';
+import '../widgets/audio_mixer_modal.dart';
+import '../widgets/poster_manager_dialog.dart';
+import '../widgets/overlay_config_dialog.dart';
+import '../widgets/scrolling_ticker_text.dart';
 import '../widgets/stream_destinations_dialog.dart';
 import '../widgets/status_bar.dart';
 import 'camera_manager_screen.dart';
 import 'bible_projection_dialog.dart';
 
-/// Régie Studio principale fidèle à la maquette 13_regie_principale.png
-/// Offre la disposition professionnelle broadcast :
-/// Dual-Screen (PRÉVISUALISATION en vert / PROGRAMME en rouge),
-/// Bloc de transition central (CUT, AUTO, TAKE),
-/// Pupitre de commutation rapide de sources et d'overlays.
 class MainStudioScreen extends StatefulWidget {
   const MainStudioScreen({Key? key}) : super(key: key);
 
@@ -24,79 +24,88 @@ class MainStudioScreen extends StatefulWidget {
 }
 
 class _MainStudioScreenState extends State<MainStudioScreen> {
-  int _selectedSourceIndex = 0;
   bool _overlayTitreActif = true;
   bool _overlayVersetActif = false;
   bool _overlayLogoActif = true;
   bool _isRecording = false;
 
-  void _triggerTake() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('TAKE : Transition de la Prévisualisation vers le Programme (On Air)'),
-        duration: Duration(milliseconds: 900),
-      ),
-    );
+  // Configuration dynamique des positions et image permanente
+  OverlayPosition _positionTexte = OverlayPosition.basGauche;
+  bool _modeDefilant = false;
+  bool _imagePermanenteActive = false;
+  String? _imagePermanenteUrl;
+
+  String _titreBandeau = 'Culte Dominical — Louange & Enseignement';
+  String _predicateurBandeau = 'Pasteur Jean Mukendi · Paroisse Centrale';
+  String _versetBandeau = 'Jean 3:16 — Car Dieu a tant aimé le monde qu\'il a donné son Fils unique...';
+
+  void _triggerTake(SceneManager sceneManager) {
+    sceneManager.executeTake();
   }
 
-  void _triggerCut() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('CUT : Bascule instantanée'),
-        duration: Duration(milliseconds: 600),
-      ),
-    );
+  void _triggerCut(SceneManager sceneManager) {
+    sceneManager.executeCut(sceneManager.selectedPreviewSceneIndex);
   }
 
   @override
   Widget build(BuildContext context) {
     final streaming = context.watch<FfmpegStreamingService>();
+    final orchestrator = context.watch<RegieOrchestratorService>();
+    final sceneManager = context.watch<SceneManager>();
+
+    final bool onAir = streaming.estEnDirect || (orchestrator.sessionEnCours?.statut.name == 'enDirect');
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Thème sombre broadcast
+      backgroundColor: const Color(0xFF090D16),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
         elevation: 0,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFF1E3A8A),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text('EECC STUDIO PRO', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1)),
+              child: const Text('EECC BROADCAST STUDIO', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
             ),
-            const SizedBox(width: 12),
-            const Text('Régie de Diffusion & Projection', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 14),
+            Text(
+              orchestrator.sessionEnCours != null
+                  ? '${orchestrator.sessionEnCours!.titreCulte} (${orchestrator.sessionEnCours!.predicateur})'
+                  : 'Régie Vidéo & Multidiffusion Direct',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white70),
+            ),
           ],
         ),
         actions: [
           // Bouton Enregistrement Local
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              foregroundColor: _isRecording ? Colors.red : Colors.white70,
-              side: BorderSide(color: _isRecording ? Colors.red : Colors.white24),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              foregroundColor: _isRecording ? Colors.redAccent : Colors.white70,
+              side: BorderSide(color: _isRecording ? Colors.redAccent : Colors.white24, width: 1.5),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
-            icon: Icon(Icons.fiber_manual_record, color: _isRecording ? Colors.red : Colors.white70, size: 16),
-            label: Text(_isRecording ? 'REC 00:42:15' : 'ENREGISTRER'),
+            icon: Icon(Icons.fiber_manual_record, color: _isRecording ? Colors.redAccent : Colors.white70, size: 16),
+            label: Text(_isRecording ? 'REC [ACTIF]' : 'ENREGISTRER'),
             onPressed: () => setState(() => _isRecording = !_isRecording),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
 
           // Bouton Diffusion Direct (Streaming)
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: streaming.estEnDirect ? Colors.red.shade700 : const Color(0xFF059669),
+              backgroundColor: onAir ? const Color(0xFFDC2626) : const Color(0xFF059669),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
-            icon: Icon(streaming.estEnDirect ? Icons.stop_circle : Icons.sensors, size: 18),
+            icon: Icon(onAir ? Icons.stop_circle : Icons.sensors, size: 18),
             label: Text(
-              streaming.estEnDirect ? 'EN DIRECT (ON AIR)' : 'DIFFUSER EN DIRECT',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              onAir ? 'ON AIR (EN DIRECT)' : 'DIFFUSER EN DIRECT',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.5),
             ),
             onPressed: () {
               showDialog(
@@ -105,17 +114,18 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
 
-          // Bouton Projection Bible (Maquette 17_media_bible.png)
+          // Bouton Projection Bible
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2563EB),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
             icon: const Icon(Icons.menu_book, size: 18),
-            label: const Text('PROJECTION BIBLE'),
+            label: const Text('PROJECTION BIBLE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
             onPressed: () {
               showDialog(
                 context: context,
@@ -123,7 +133,45 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
+
+          // Bouton Mixeur Audio Complet (DSP & Égaliseur)
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0F766E),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            icon: const Icon(Icons.graphic_eq, size: 18),
+            label: const Text('MIXEUR AUDIO PRO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const AudioMixerModal(),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
+
+          // Bouton Publication Affiches & Annonces programmées
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFC026D3), // Magenta / Fuchsia distinctif
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            icon: const Icon(Icons.campaign, size: 18),
+            label: const Text('AFFICHE & ANNONCE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (_) => const PosterManagerDialog(),
+              );
+            },
+          ),
+          const SizedBox(width: 10),
 
           IconButton(
             icon: const Icon(Icons.videocam_outlined),
@@ -135,52 +183,55 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
       ),
       body: Column(
         children: [
-          // Zone principale Dual Screen + Panneaux
+          // Corps Dual Monitors & Panneaux Studio
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 1. Panneau Scènes & Sources (Gauche)
                 SizedBox(
-                  width: 260,
+                  width: 250,
                   child: Container(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF0F172A),
                     child: Column(
                       children: const [
-                        Expanded(flex: 1, child: ScenePanel()),
+                        Expanded(flex: 5, child: ScenePanel()),
                         Divider(height: 1, color: Colors.white12),
-                        Expanded(flex: 1, child: SourcesPanel()),
+                        Expanded(flex: 4, child: SourcesPanel()),
                       ],
                     ),
                   ),
                 ),
                 const VerticalDivider(width: 1, color: Colors.black),
 
-                // 2. Zone Centrale DUAL-MONITORS (Prévisualisation + Programme On-Air)
+                // 2. Zone Centrale DUAL-MONITORS Broadcast
                 Expanded(
                   child: Container(
                     color: const Color(0xFF020617),
-                    padding: const EdgeInsets.all(12.0),
+                    padding: const EdgeInsets.all(10.0),
                     child: Column(
                       children: [
                         Expanded(
                           child: Row(
                             children: [
-                              // Écran 1 : PRÉVISUALISATION (Bordure Verte)
+                              // ÉCRAN 1 : PRÉVISUALISATION (PREVIEW)
                               Expanded(
                                 child: Column(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                       decoration: const BoxDecoration(
                                         color: Color(0xFF059669),
                                         borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
                                       ),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: const [
-                                          Text('PRÉVISUALISATION (PREVIEW)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                                          Text('SORTIE STANDBY', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                        children: [
+                                          Text(
+                                            'PRÉVISUALISATION : ${sceneManager.previewScene.nom.toUpperCase()}',
+                                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                                          ),
+                                          const Text('SORTIE STANDBY', style: TextStyle(color: Colors.white70, fontSize: 10)),
                                         ],
                                       ),
                                     ),
@@ -190,112 +241,195 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
                                           border: Border.all(color: const Color(0xFF059669), width: 2),
                                           color: Colors.black,
                                         ),
-                                        child: const Center(child: PreviewCanvas()),
+                                        child: const PreviewCanvas(mode: CanvasMode.preview),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              // Console de transition centrale (CUT, AUTO, TAKE)
+                              // PUPITRE DE TRANSITION CENTRAL
                               Container(
-                                width: 90,
+                                width: 88,
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF334155),
+                                        backgroundColor: const Color(0xFF1E293B),
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(vertical: 12),
-                                        minimumSize: const Size(74, 40),
+                                        minimumSize: const Size(72, 38),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                       ),
-                                      onPressed: _triggerCut,
+                                      onPressed: () => _triggerCut(sceneManager),
                                       child: const Text('CUT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                     ),
                                     const SizedBox(height: 10),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF334155),
+                                        backgroundColor: const Color(0xFF1E293B),
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(vertical: 12),
-                                        minimumSize: const Size(74, 40),
+                                        minimumSize: const Size(72, 38),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                       ),
-                                      onPressed: _triggerTake,
+                                      onPressed: () => _triggerTake(sceneManager),
                                       child: const Text('AUTO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                     ),
                                     const SizedBox(height: 16),
-                                    // Grand Bouton TAKE
+                                    // GRAND BOUTON TAKE
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: const Color(0xFFDC2626),
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 18),
-                                        minimumSize: const Size(74, 60),
+                                        padding: const EdgeInsets.symmetric(vertical: 20),
+                                        minimumSize: const Size(72, 64),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                        elevation: 6,
                                       ),
-                                      onPressed: _triggerTake,
-                                      child: const Text('TAKE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+                                      onPressed: () => _triggerTake(sceneManager),
+                                      child: const Text('TAKE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1)),
                                     ),
                                   ],
                                 ),
                               ),
 
-                              // Écran 2 : PROGRAMME EN COURS (Bordure Rouge On-Air)
+                              // ÉCRAN 2 : PROGRAMME ON AIR (PROGRAM)
                               Expanded(
                                 child: Column(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFFDC2626),
-                                        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: onAir ? const Color(0xFFDC2626) : const Color(0xFF7F1D1D),
+                                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                                       ),
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: const [
-                                          Text('PROGRAMME (ON AIR)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                                          Text('DIRECT STREAMING & PROJECTION', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                        children: [
+                                          Text(
+                                            'PROGRAMME : ${sceneManager.programScene.nom.toUpperCase()} ${onAir ? "• ON AIR" : ""}',
+                                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                                          ),
+                                          const Text('FLUX SORTANT', style: TextStyle(color: Colors.white70, fontSize: 10)),
                                         ],
                                       ),
                                     ),
                                     Expanded(
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          border: Border.all(color: const Color(0xFFDC2626), width: 2),
+                                          border: Border.all(color: onAir ? const Color(0xFFDC2626) : const Color(0xFF7F1D1D), width: 2),
                                           color: Colors.black,
                                         ),
                                         child: Stack(
+                                          fit: StackFit.expand,
                                           children: [
-                                            const Center(child: PreviewCanvas()),
-                                            // Overlays On Air
+                                            const PreviewCanvas(mode: CanvasMode.program),
+
+                                            // 1. IMAGE PERMANENTE EN CONTINU (TOUT AU LONG DU LIVE)
+                                            if (_imagePermanenteActive && _imagePermanenteUrl != null && _imagePermanenteUrl!.isNotEmpty)
+                                              Positioned(
+                                                top: 14,
+                                                left: 14,
+                                                child: Container(
+                                                  constraints: const BoxConstraints(maxWidth: 120, maxHeight: 60),
+                                                  padding: const EdgeInsets.all(4),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withOpacity(0.4),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: Image.network(
+                                                    _imagePermanenteUrl!,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (_, __, ___) => const Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(Icons.image, color: Colors.white70, size: 16),
+                                                        SizedBox(width: 4),
+                                                        Text('IMAGE LIVE', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+
+                                            // 2. OVERLAY LOGO OFFICIEL
                                             if (_overlayLogoActif)
                                               Positioned(
                                                 top: 12,
                                                 right: 12,
                                                 child: Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(4)),
-                                                  child: const Text('EECC LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                                                ),
-                                              ),
-                                            if (_overlayTitreActif)
-                                              Positioned(
-                                                bottom: 12,
-                                                left: 12,
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                                  decoration: BoxDecoration(color: const Color(0xFF1E3A8A).withOpacity(0.9), borderRadius: BorderRadius.circular(4)),
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.black.withOpacity(0.7),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                    border: Border.all(color: Colors.white24),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
                                                     children: const [
-                                                      Text('Culte de célébration & adoration', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                                                      Text('Pasteur David Kande', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                                      Icon(Icons.circle, color: Colors.redAccent, size: 8),
+                                                      SizedBox(width: 6),
+                                                      Text('EECC LIVE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
                                                     ],
                                                   ),
                                                 ),
                                               ),
+
+                                            // 3. TEXTE & VERSET POSITIONNABLE (Haut-Gauche, Haut-Droit, Bas-Gauche, Bas-Droit ou Défilant)
+                                            if (_overlayTitreActif || _overlayVersetActif)
+                                              _buildPositionedOverlayWidget(),
+
+                                            // 4. AFFICHE TEMPORISÉE EN DIRECT
+                                            StreamBuilder<List<Map<String, dynamic>>>(
+                                              stream: EeccSupabaseService().ecouterAffichesActives(pourLive: true, intervalle: const Duration(seconds: 8)),
+                                              builder: (context, snapshot) {
+                                                final affiches = snapshot.data ?? [];
+                                                if (affiches.isEmpty) return const SizedBox.shrink();
+
+                                                final a = affiches.first;
+                                                return Positioned(
+                                                  bottom: _modeDefilant ? 44 : 14,
+                                                  right: 14,
+                                                  child: Container(
+                                                    constraints: const BoxConstraints(maxWidth: 320),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFFC026D3).withOpacity(0.92),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      border: Border.all(color: Colors.white30),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(Icons.campaign, color: Colors.white, size: 20),
+                                                        const SizedBox(width: 8),
+                                                        Expanded(
+                                                          child: Column(
+                                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Text(
+                                                                a['titre']?.toString() ?? '',
+                                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                                                                maxLines: 1,
+                                                                overflow: TextOverflow.ellipsis,
+                                                              ),
+                                                              const Text(
+                                                                'AFFICHE OFFICIELLE EN COURS',
+                                                                style: TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -306,30 +440,66 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
 
-                        // Pupitre de commutation rapide de sources (Banc de commutation 13_regie_principale.png)
+                        // BANCS DE COMMUTATION RAPIDE & HABILLAGE
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF1E293B),
-                            borderRadius: BorderRadius.circular(8),
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.white10),
                           ),
                           child: Row(
                             children: [
-                              const Text('SOURCES : ', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                              const Text('SCÈNES RAPIDES : ', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 8),
-                              _buildSourceButton(0, 'CAM 1 (Pupitre)'),
-                              _buildSourceButton(1, 'CAM 2 (Chorale)'),
-                              _buildSourceButton(2, 'CAM 3 (Fidèles)'),
-                              _buildSourceButton(3, 'MÉDIA (Bible)'),
-                              _buildSourceButton(4, 'DIAPOS (PPT)'),
+                              ...List.generate(sceneManager.scenes.length, (i) {
+                                final isSelected = (sceneManager.selectedPreviewSceneIndex == i);
+                                final isProgram = (sceneManager.programSceneIndex == i);
+
+                                Color btnColor = const Color(0xFF1E293B);
+                                if (isProgram) {
+                                  btnColor = const Color(0xFFDC2626);
+                                } else if (isSelected) {
+                                  btnColor = const Color(0xFF059669);
+                                }
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6.0),
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: btnColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      minimumSize: const Size(60, 32),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                    ),
+                                    onPressed: () => sceneManager.selectionnerPreview(i),
+                                    child: Text(
+                                      'S${i + 1}',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+                                    ),
+                                  ),
+                                );
+                              }),
                               const Spacer(),
-                              // Bascules Overlays
-                              const Text('TITRAGES : ', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                              const Text('HABILLAGE : ', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
                               _buildOverlayToggle('Titre', _overlayTitreActif, (v) => setState(() => _overlayTitreActif = v)),
                               _buildOverlayToggle('Verset', _overlayVersetActif, (v) => setState(() => _overlayVersetActif = v)),
                               _buildOverlayToggle('Logo', _overlayLogoActif, (v) => setState(() => _overlayLogoActif = v)),
+                              const SizedBox(width: 6),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF3B82F6),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                ),
+                                icon: const Icon(Icons.tune, size: 14),
+                                label: const Text('POSITIONS / IMAGE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                onPressed: _ouvrirConfigOverlay,
+                              ),
                             ],
                           ),
                         ),
@@ -341,9 +511,9 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
 
                 // 3. Panneau Audio Mixer (Droite)
                 SizedBox(
-                  width: 230,
+                  width: 240,
                   child: Container(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF0F172A),
                     child: const AudioMixerPanel(),
                   ),
                 ),
@@ -351,50 +521,123 @@ class _MainStudioScreenState extends State<MainStudioScreen> {
             ),
           ),
           const Divider(height: 1, color: Colors.black),
-          // Barre de statut
           const StatusBar(),
         ],
       ),
     );
   }
 
-  Widget _buildSourceButton(int index, String label) {
-    final isSelected = _selectedSourceIndex == index;
-    return Padding(
-      padding: const EdgeInsets.only(right: 6.0),
-      child: InkWell(
-        onTap: () => setState(() => _selectedSourceIndex = index),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF334155),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: isSelected ? Colors.white : Colors.transparent),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ),
+  void _ouvrirConfigOverlay() {
+    showDialog(
+      context: context,
+      builder: (_) => OverlayConfigDialog(
+        positionInitiale: _positionTexte,
+        titreInitial: _titreBandeau,
+        sousTitreInitial: _predicateurBandeau,
+        permanentImageUrl: _imagePermanenteUrl,
+        permanentImageActive: _imagePermanenteActive,
+        modeDefilant: _modeDefilant,
+        onSave: ({
+          required OverlayPosition position,
+          required String titre,
+          required String sousTitre,
+          required String? imageUrl,
+          required bool imageActive,
+          required bool modeDefilant,
+        }) {
+          setState(() {
+            _positionTexte = position;
+            _titreBandeau = titre;
+            _predicateurBandeau = sousTitre;
+            _imagePermanenteUrl = imageUrl;
+            _imagePermanenteActive = imageActive;
+            _modeDefilant = modeDefilant;
+          });
+        },
       ),
     );
   }
 
-  Widget _buildOverlayToggle(String label, bool value, Function(bool) onChanged) {
+  Widget _buildPositionedOverlayWidget() {
+    final texteComplet = '$_titreBandeau — $_predicateurBandeau';
+
+    // 1. Si mode défilant
+    if (_modeDefilant || _positionTexte == OverlayPosition.bandeauDefilant) {
+      return Positioned(
+        bottom: 0,
+        left: 0,
+        right: 0,
+        child: Container(
+          height: 32,
+          color: const Color(0xFF0F172A).withOpacity(0.95),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(3)),
+                child: const Text('DIRECT', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ScrollingTickerText(
+                  text: texteComplet,
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // 2. Détermination de la boîte de texte
+    final Widget textCard = Container(
+      constraints: const BoxConstraints(maxWidth: 380),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A).withOpacity(0.92),
+        borderRadius: BorderRadius.circular(6),
+        border: const Border(left: BorderSide(color: Color(0xFF2563EB), width: 4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_titreBandeau, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+          if (_predicateurBandeau.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(_predicateurBandeau, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          ],
+        ],
+      ),
+    );
+
+    // 3. Positionnement selon les 4 coins
+    switch (_positionTexte) {
+      case OverlayPosition.hautGauche:
+        return Positioned(top: 14, left: 14, child: textCard);
+      case OverlayPosition.hautDroit:
+        return Positioned(top: 14, right: 14, child: textCard);
+      case OverlayPosition.basDroit:
+        return Positioned(bottom: 14, right: 14, child: textCard);
+      case OverlayPosition.basGauche:
+      default:
+        return Positioned(bottom: 14, left: 14, child: textCard);
+    }
+  }
+
+  Widget _buildOverlayToggle(String label, bool value, Function(bool) onToggle) {
     return Padding(
       padding: const EdgeInsets.only(left: 6.0),
       child: FilterChip(
-        label: Text(label, style: const TextStyle(fontSize: 10.5, color: Colors.white)),
+        label: Text(label, style: const TextStyle(fontSize: 11, color: Colors.white)),
         selected: value,
-        selectedColor: const Color(0xFF059669),
-        backgroundColor: const Color(0xFF334155),
-        padding: EdgeInsets.zero,
-        onSelected: onChanged,
+        selectedColor: const Color(0xFF2563EB),
+        backgroundColor: const Color(0xFF1E293B),
+        checkmarkColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+        onSelected: onToggle,
       ),
     );
   }

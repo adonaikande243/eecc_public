@@ -8,41 +8,96 @@ class SourcesPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sceneManager = context.watch<SceneManager>();
-    final sceneActive = sceneManager.sceneActive;
-    
+    final previewScene = sceneManager.previewScene;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(8.0),
-          color: Theme.of(context).primaryColor,
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          color: const Color(0xFF0F172A),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Sources', style: TextStyle(fontWeight: FontWeight.bold)),
-              IconButton(
-                icon: const Icon(Icons.add, size: 20),
-                onPressed: () {
-                  // Menu pour ajouter une source
-                },
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              )
+              Text(
+                'SOURCES (${previewScene.nom})',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 10.5,
+                  letterSpacing: 0.8,
+                  color: Colors.white70,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Icon(Icons.tune, size: 16, color: Colors.white54),
             ],
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: sceneActive.sources.length,
-            itemBuilder: (context, index) {
-              final source = sceneActive.sources[index];
-              return ListTile(
-                leading: Icon(source.estVisible ? Icons.visibility : Icons.visibility_off, size: 20),
-                title: Text(source.nom),
-                trailing: Icon(source.estMute ? Icons.volume_off : Icons.volume_up, size: 20),
-              );
-            },
-          ),
+          child: previewScene.sources.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Aucune source dans cette scène',
+                    style: TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(6),
+                  itemCount: previewScene.sources.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 4),
+                  itemBuilder: (context, index) {
+                    final source = previewScene.sources[index];
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              source.estVisible ? Icons.visibility : Icons.visibility_off,
+                              size: 18,
+                              color: source.estVisible ? const Color(0xFF38BDF8) : Colors.white30,
+                            ),
+                            onPressed: () => sceneManager.basculerVisibiliteSource(source.id),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              source.nom,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: source.estVisible ? Colors.white : Colors.white38,
+                                fontWeight: source.estVisible ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              source.estMute ? Icons.volume_off : Icons.volume_up,
+                              size: 16,
+                              color: source.estMute ? Colors.redAccent : Colors.greenAccent,
+                            ),
+                            onPressed: () {
+                              source.estMute = !source.estMute;
+                              // Force redraw
+                              (context as Element).markNeedsBuild();
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );

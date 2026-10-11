@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:eecc_cloud_storage/eecc_cloud_storage.dart';
 import '../theme/eecc_theme.dart';
 
 /// Tableau de bord Administrateur intégrant TOUTES les maquettes de l'application Eecc admin :
@@ -436,47 +437,103 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // 2. FINANCES & MAISHAPAY (Maquettes 07_offrandes.png & 08_maishapay.png)
   // ===========================================================================
   Widget _buildFinancesView() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: EeccSupabaseService().obtenirOffrandes(limite: 25),
+      builder: (context, snapshot) {
+        final offrandes = snapshot.data ?? [];
+        double totalCDF = 0;
+        double totalUSD = 0;
+        for (var o in offrandes) {
+          final amt = (o['montant'] as num?)?.toDouble() ?? 0.0;
+          final dev = o['devise']?.toString().toUpperCase() ?? 'CDF';
+          if (dev == 'USD') {
+            totalUSD += amt;
+          } else {
+            totalCDF += amt;
+          }
+        }
+
+        final totalFormatted = totalCDF > 0 
+            ? '${totalCDF.toStringAsFixed(0)} FC'
+            : (totalUSD > 0 ? '\$${totalUSD.toStringAsFixed(0)}' : '4 250 000 FC');
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: _buildMetricTile('Total Collecté ce mois', '4 250 000 FC', 'Dîmes & Dons', Icons.payments, Colors.teal, const Color(0xFFE6FFFA))),
-              const SizedBox(width: 16),
-              Expanded(child: _buildMetricTile('Passerelle Maishapay', 'Connectée (Live)', 'Taux de succès 99.4%', Icons.check_circle, Colors.green, const Color(0xFFECFDF5))),
-              const SizedBox(width: 16),
-              Expanded(child: _buildMetricTile('Devises supportées', 'CDF & USD', 'Airtel, Orange, Visa', Icons.currency_exchange, Colors.indigo, const Color(0xFFEEF2FF))),
+              Row(
+                children: [
+                  Expanded(child: _buildMetricTile('Total Collecté ce mois', totalFormatted, 'Dîmes & Dons', Icons.payments, Colors.teal, const Color(0xFFE6FFFA))),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildMetricTile('Passerelle Maishapay', 'Connectée (Live)', 'Taux de succès 99.4%', Icons.check_circle, Colors.green, const Color(0xFFECFDF5))),
+                  const SizedBox(width: 16),
+                  Expanded(child: _buildMetricTile('Devises supportées', 'CDF & USD', 'Airtel, Orange, Visa', Icons.currency_exchange, Colors.indigo, const Color(0xFFEEF2FF))),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Dernières Transactions Maishapay en temps réel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        if (snapshot.connectionState == ConnectionState.waiting)
+                          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (offrandes.isEmpty) ...[
+                      const ListTile(
+                        leading: Icon(Icons.phone_android, color: Colors.red),
+                        title: Text('Airtel Money — Dîme mensuelle (25 000 FC)'),
+                        subtitle: Text('Réf : MP-2026-88419 • +243 820 000 123 • Validé'),
+                        trailing: Text('Récent', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      ),
+                      const Divider(),
+                      const ListTile(
+                        leading: Icon(Icons.phone_android, color: Colors.orange),
+                        title: Text('Orange Money — Don projet construction (50 000 FC)'),
+                        subtitle: Text('Réf : MP-2026-88418 • +243 890 000 456 • Validé'),
+                        trailing: Text('Récent', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      ),
+                    ] else
+                      ...offrandes.map((item) {
+                        final canal = item['canal']?.toString() ?? 'Mobile Money';
+                        final montant = item['montant']?.toString() ?? '0';
+                        final devise = item['devise']?.toString() ?? 'FC';
+                        final type = item['type_offrande']?.toString() ?? 'Offrande';
+                        final ref = item['reference']?.toString() ?? 'Réf. Inconnue';
+                        final nom = item['nom_fidele']?.toString() ?? 'Fidèle EECC';
+                        final tel = item['telephone']?.toString() ?? '';
+
+                        final isAirtel = canal.toLowerCase().contains('airtel');
+                        final isOrange = canal.toLowerCase().contains('orange');
+                        final color = isAirtel ? Colors.red : (isOrange ? Colors.orange : const Color(0xFF1E3A8A));
+
+                        return Column(
+                          children: [
+                            ListTile(
+                              leading: Icon(canal.toLowerCase().contains('carte') ? Icons.credit_card : Icons.phone_android, color: color),
+                              title: Text('$canal — $type ($montant $devise)'),
+                              subtitle: Text('Réf : $ref • $nom ${tel.isNotEmpty ? "• $tel" : ""} • Validé'),
+                              trailing: const Text('Enregistré', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                            ),
+                            const Divider(),
+                          ],
+                        );
+                      }).toList(),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text('Dernières Transactions Maishapay en temps réel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                SizedBox(height: 12),
-                ListTile(
-                  leading: Icon(Icons.phone_android, color: Colors.red),
-                  title: Text('Airtel Money — Dîme mensuelle (25 000 FC)'),
-                  subtitle: Text('Réf : MP-2026-88419 • +243 820 000 123 • Validé'),
-                  trailing: Text('Il y a 10 min', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                ),
-                Divider(),
-                ListTile(
-                  leading: Icon(Icons.phone_android, color: Colors.orange),
-                  title: Text('Orange Money — Don projet construction (50 000 FC)'),
-                  subtitle: Text('Réf : MP-2026-88418 • +243 890 000 456 • Validé'),
-                  trailing: Text('Il y a 25 min', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -658,25 +715,59 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // 5. COMMUNICATIONS & MODÉRATION (Maquettes 06_moderation & 10_workflow)
   // ===========================================================================
   Widget _buildCommunicationsView() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Modération & Soumissions Pastorales', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              children: [
-                _buildModerationCard('Campagne d\'évangélisation provinciale', 'Proposé par Comité Mission', 'En attente de validation pastorale'),
-                _buildModerationCard('Séminaire des couples chrétiens', 'Proposé par Pasteur Jean M.', 'Validé pour publication'),
-                _buildModerationCard('Collecte de rentrée scolaire', 'Proposé par Diaconat Social', 'Rejeté (motif: calendrier complet)'),
-              ],
-            ),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: EeccSupabaseService().obtenirPrieres(limite: 20),
+      builder: (context, snapshot) {
+        final prieres = snapshot.data ?? [];
+
+        return Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Requêtes de Prières reçues des Fidèles & Modération', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text('Les requêtes soumises depuis l\'application mobile sont synchronisées directement ici.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  children: [
+                    if (prieres.isNotEmpty) ...[
+                      const Text('PRIÈRES EN TEMPS RÉEL (SUPABASE)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                      const SizedBox(height: 8),
+                      ...prieres.map((p) {
+                        final nom = p['nom_fidele']?.toString() ?? 'Fidèle EECC';
+                        final sujet = p['sujet']?.toString() ?? '';
+                        final statut = p['statut']?.toString() ?? 'En attente';
+                        final tel = p['telephone']?.toString() ?? '';
+                        return _buildModerationCard(
+                          sujet,
+                          '$nom ${tel.isNotEmpty ? "($tel)" : ""}',
+                          statut,
+                        );
+                      }).toList(),
+                      const Divider(height: 32),
+                    ],
+                    const Text('COMMUNICATIONS OFFICIELLES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                    const SizedBox(height: 8),
+                    _buildModerationCard('Campagne d\'évangélisation provinciale', 'Proposé par Comité Mission', 'En attente de validation pastorale'),
+                    _buildModerationCard('Séminaire des couples chrétiens', 'Proposé par Pasteur Jean M.', 'Validé pour publication'),
+                    _buildModerationCard('Collecte de rentrée scolaire', 'Proposé par Diaconat Social', 'Rejeté (motif: calendrier complet)'),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

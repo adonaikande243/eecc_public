@@ -107,6 +107,23 @@ CREATE TABLE IF NOT EXISTS public.eecc_auth_otp (
 CREATE INDEX IF NOT EXISTS idx_eecc_auth_otp ON public.eecc_auth_otp (identifiant, code_otp, utilise);
 
 -- ============================================================================
+-- 5. BIS. TABLE : eecc_affiches (Affiches d'annonces, événements & projection live)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.eecc_affiches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    titre TEXT NOT NULL,
+    sous_titre TEXT,
+    image_url TEXT,
+    duree_secondes INTEGER NOT NULL DEFAULT 60,
+    actif_sur_app_public BOOLEAN NOT NULL DEFAULT true,
+    actif_sur_projection_live BOOLEAN NOT NULL DEFAULT true,
+    expire_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_eecc_affiches_actif ON public.eecc_affiches (actif_sur_app_public, actif_sur_projection_live, created_at DESC);
+
+-- ============================================================================
 -- 6. POLITIQUES DE SÉCURITÉ ROW LEVEL SECURITY (RLS)
 -- ============================================================================
 
@@ -116,6 +133,13 @@ ALTER TABLE public.eecc_archives ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.eecc_offrandes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.eecc_prieres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.eecc_auth_otp ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.eecc_affiches ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Lecture publique des affiches" ON public.eecc_affiches
+    FOR SELECT USING (true);
+
+CREATE POLICY "Gestion des affiches" ON public.eecc_affiches
+    FOR ALL USING (true);
 
 -- 6.1 Politiques pour eecc_lives :
 -- Tout le monde (fidèles, public) peut lire le statut du live
@@ -153,13 +177,14 @@ CREATE POLICY "Lecture et gestion prières pasteurs" ON public.eecc_prieres
     FOR ALL USING (true);
 
 -- 6.5 Politiques pour eecc_auth_otp :
+-- Gestion OTP service_role
 CREATE POLICY "Gestion OTP service_role" ON public.eecc_auth_otp
     FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'anon');
 
 -- ============================================================================
 -- 7. ACTIVATION DE SUPABASE REALTIME (WebSockets)
--- Permet aux applications mobiles de recevoir le direct et les prières instantanément
 -- ============================================================================
 ALTER PUBLICATION supabase_realtime ADD TABLE public.eecc_lives;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.eecc_prieres;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.eecc_archives;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.eecc_affiches;
